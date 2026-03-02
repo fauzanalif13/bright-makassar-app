@@ -2,373 +2,204 @@
 
 import { useState } from 'react'
 import toast from 'react-hot-toast'
-import { updatePasswordAction, updateProfileDetailsAction, updateSpreadsheetAction, updateSheetConfigAction } from './actions'
+import { updatePasswordAction, updateProfileDetailsAction, updateSpreadsheetAction, updateSheetConfigAction, updateEducationConfigAction } from './actions'
 import { uploadAvatarAction } from './avatar-actions'
-import { Camera, Loader2, Save, KeyRound, User, Link2, Settings2 } from 'lucide-react'
+import { Camera, Loader2, Save, KeyRound, User, Link2, Settings2, BookOpen, GraduationCap } from 'lucide-react'
 
 type ProfileData = {
     name: string
     email: string
     avatar_url: string
     spreadsheet_id: string
-    sheet_config: { ibadah_sheet?: string; rerata_range?: string } | null
+    sheet_config: Record<string, string> | null
 }
 
+const TABS = [
+    { key: 'umum', label: 'Umum', icon: User },
+    { key: 'ibadah', label: 'Ibadah', icon: BookOpen },
+    { key: 'pendidikan', label: 'Pendidikan', icon: GraduationCap },
+] as const
+
+type TabKey = typeof TABS[number]['key']
+
 export default function ProfileForms({ initialData }: { initialData: ProfileData }) {
+    const [activeTab, setActiveTab] = useState<TabKey>('umum')
     const [avatar, setAvatar] = useState(initialData.avatar_url)
     const [uploading, setUploading] = useState(false)
     const [savingDetails, setSavingDetails] = useState(false)
     const [savingPassword, setSavingPassword] = useState(false)
     const [savingSpreadsheet, setSavingSpreadsheet] = useState(false)
-    const [savingConfig, setSavingConfig] = useState(false)
+    const [savingIbadah, setSavingIbadah] = useState(false)
+    const [savingPendidikan, setSavingPendidikan] = useState(false)
 
+    // --- Handlers ---
     async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
         if (!e.target.files || e.target.files.length === 0) return
-
         const file = e.target.files[0]
         const formData = new FormData()
         formData.append('avatar', file)
-
         setUploading(true)
-        const loadingToast = toast.loading('Mengunggah foto...')
-
+        const t = toast.loading('Mengunggah foto...')
         try {
-            const result = await uploadAvatarAction(formData)
-            if (result.error) {
-                toast.error(result.error, { id: loadingToast })
-            } else if (result.success && result.avatarUrl) {
-                setAvatar(result.avatarUrl)
-                toast.success(result.success, { id: loadingToast })
-            }
-        } catch {
-            toast.error('Terjadi kesalahan saat mengunggah.', { id: loadingToast })
-        } finally {
-            setUploading(false)
-        }
+            const r = await uploadAvatarAction(formData)
+            if (r.error) toast.error(r.error, { id: t })
+            else if (r.success && r.avatarUrl) { setAvatar(r.avatarUrl); toast.success(r.success, { id: t }) }
+        } catch { toast.error('Gagal mengunggah.', { id: t }) }
+        finally { setUploading(false) }
     }
 
-    async function handleDetailsUpdate(e: React.FormEvent<HTMLFormElement>) {
+    async function handleForm(action: (fd: FormData) => Promise<{ error?: string; success?: string }>, setLoading: (v: boolean) => void, e: React.FormEvent<HTMLFormElement>, reset?: boolean) {
         e.preventDefault()
-        setSavingDetails(true)
-
-        const formData = new FormData(e.currentTarget)
+        setLoading(true)
         try {
-            const result = await updateProfileDetailsAction(formData)
-            if (result.error) {
-                toast.error(result.error)
-            } else if (result.success) {
-                toast.success(result.success, { duration: 5000 })
-            }
-        } catch {
-            toast.error('Terjadi kesalahan yang tidak terduga.')
-        } finally {
-            setSavingDetails(false)
-        }
+            const r = await action(new FormData(e.currentTarget))
+            if (r.error) toast.error(r.error)
+            else if (r.success) { toast.success(r.success); if (reset) (e.target as HTMLFormElement).reset() }
+        } catch { toast.error('Terjadi kesalahan.') }
+        finally { setLoading(false) }
     }
 
-    async function handlePasswordUpdate(e: React.FormEvent<HTMLFormElement>) {
-        e.preventDefault()
-        setSavingPassword(true)
-
-        const form = e.currentTarget
-        const formData = new FormData(form)
-
-        try {
-            const result = await updatePasswordAction(formData)
-            if (result.error) {
-                toast.error(result.error)
-            } else if (result.success) {
-                toast.success(result.success)
-                form.reset()
-            }
-        } catch {
-            toast.error('Terjadi kesalahan yang tidak terduga.')
-        } finally {
-            setSavingPassword(false)
-        }
-    }
-
-    async function handleSpreadsheetUpdate(e: React.FormEvent<HTMLFormElement>) {
-        e.preventDefault()
-        setSavingSpreadsheet(true)
-
-        const formData = new FormData(e.currentTarget)
-        try {
-            const result = await updateSpreadsheetAction(formData)
-            if (result.error) {
-                toast.error(result.error)
-            } else if (result.success) {
-                toast.success(result.success)
-            }
-        } catch {
-            toast.error('Terjadi kesalahan yang tidak terduga.')
-        } finally {
-            setSavingSpreadsheet(false)
-        }
-    }
-
-    async function handleConfigUpdate(e: React.FormEvent<HTMLFormElement>) {
-        e.preventDefault()
-        setSavingConfig(true)
-
-        const formData = new FormData(e.currentTarget)
-        try {
-            const result = await updateSheetConfigAction(formData)
-            if (result.error) {
-                toast.error(result.error)
-            } else if (result.success) {
-                toast.success(result.success)
-            }
-        } catch {
-            toast.error('Terjadi kesalahan yang tidak terduga.')
-        } finally {
-            setSavingConfig(false)
-        }
-    }
-
-    // Build display URL from spreadsheet_id
-    const spreadsheetDisplayUrl = initialData.spreadsheet_id
-        ? `https://docs.google.com/spreadsheets/d/${initialData.spreadsheet_id}/edit`
-        : ''
+    const sc = initialData.sheet_config || {}
+    const spreadsheetDisplayUrl = initialData.spreadsheet_id ? `https://docs.google.com/spreadsheets/d/${initialData.spreadsheet_id}/edit` : ''
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Avatar Selection Column */}
-            <div className="md:col-span-1">
-                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 flex flex-col items-center">
-                    <div className="relative group mb-6">
-                        <div className="w-40 h-40 rounded-full bg-blue-50 border-4 border-white shadow-lg overflow-hidden flex items-center justify-center text-[#00529C] text-5xl font-bold ring-4 ring-[#15A4FA]/20">
-                            {avatar ? (
-                                <img src={avatar} alt="Profile" className="w-full h-full object-cover" />
-                            ) : (
-                                initialData.name.charAt(0).toUpperCase()
-                            )}
+        <div className="space-y-6">
+            {/* Tab Bar */}
+            <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
+                {TABS.map(tab => {
+                    const Icon = tab.icon
+                    return (
+                        <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === tab.key ? 'bg-white text-[#00529C] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+                            <Icon className="w-4 h-4" />{tab.label}
+                        </button>
+                    )
+                })}
+            </div>
+
+            {/* ─── Tab: Umum ─────────────────────────────────────────────── */}
+            {activeTab === 'umum' && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Avatar Column */}
+                    <div className="md:col-span-1">
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col items-center">
+                            <div className="relative group mb-4">
+                                <div className="w-32 h-32 rounded-full bg-blue-50 border-4 border-white shadow-lg overflow-hidden flex items-center justify-center text-[#00529C] text-4xl font-bold ring-4 ring-[#15A4FA]/20">
+                                    {avatar ? <img src={avatar} alt="Profile" className="w-full h-full object-cover" /> : initialData.name.charAt(0).toUpperCase()}
+                                </div>
+                                <label htmlFor="avatar-upload" className="absolute bottom-1 right-1 w-9 h-9 bg-[#15A4FA] hover:bg-[#00529C] text-white rounded-full flex items-center justify-center cursor-pointer shadow-lg transition-colors" title="Ubah Foto">
+                                    {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+                                </label>
+                                <input id="avatar-upload" type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploading} />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900 text-center">{initialData.name}</h3>
+                            <p className="text-xs text-gray-500 bg-gray-50 px-2.5 py-0.5 rounded-full mt-1">{initialData.email}</p>
                         </div>
-                        <label
-                            htmlFor="avatar-upload"
-                            className="absolute bottom-2 right-2 w-10 h-10 bg-[#15A4FA] hover:bg-[#00529C] text-white rounded-full flex items-center justify-center cursor-pointer shadow-lg transition-colors"
-                            title="Ubah Foto Profil"
-                        >
-                            {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
-                        </label>
-                        <input
-                            id="avatar-upload"
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={handleAvatarUpload}
-                            disabled={uploading}
-                        />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 text-center">{initialData.name}</h3>
-                    <p className="text-sm text-gray-500 text-center mt-1 bg-gray-50 px-3 py-1 rounded-full">{initialData.email}</p>
-                </div>
-            </div>
 
-            {/* Forms Column */}
-            <div className="md:col-span-2 space-y-6">
+                    {/* Forms Column */}
+                    <div className="md:col-span-2 space-y-5">
+                        {/* Details */}
+                        <Card icon={<User className="w-4.5 h-4.5 text-[#00529C]" />} title="Informasi Pribadi">
+                            <form onSubmit={(e) => handleForm(updateProfileDetailsAction, setSavingDetails, e)} className="space-y-4">
+                                <Input id="name" name="name" label="Nama Tampilan" defaultValue={initialData.name} required />
+                                <div>
+                                    <Input id="email" name="email" label="Alamat Email" type="email" defaultValue={initialData.email} required />
+                                    <p className="text-[11px] text-gray-500 mt-1.5">Perubahan email memerlukan verifikasi ulang.</p>
+                                </div>
+                                <SubmitBtn loading={savingDetails} label="Simpan" />
+                            </form>
+                        </Card>
 
-                {/* Details Form */}
-                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="px-8 py-5 border-b border-gray-100 flex items-center gap-3 bg-gray-50/50">
-                        <User className="w-5 h-5 text-[#00529C]" />
-                        <h2 className="text-lg font-bold text-gray-900">Informasi Pribadi</h2>
-                    </div>
-                    <div className="p-8">
-                        <form onSubmit={handleDetailsUpdate} className="space-y-5">
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2" htmlFor="name">
-                                    Nama Tampilan
-                                </label>
-                                <input
-                                    id="name"
-                                    name="name"
-                                    type="text"
-                                    defaultValue={initialData.name}
-                                    required
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#15A4FA] focus:border-transparent transition-all text-gray-900"
-                                />
-                            </div>
+                        {/* Spreadsheet URL */}
+                        <Card icon={<Link2 className="w-4.5 h-4.5 text-[#00529C]" />} title="Konfigurasi Spreadsheet">
+                            <form onSubmit={(e) => handleForm(updateSpreadsheetAction, setSavingSpreadsheet, e)} className="space-y-4">
+                                <div>
+                                    <Input id="spreadsheetUrl" name="spreadsheetUrl" label="URL Google Spreadsheet" type="url" defaultValue={spreadsheetDisplayUrl} placeholder="https://docs.google.com/spreadsheets/d/.../edit" />
+                                    <p className="text-[11px] text-gray-500 mt-1.5">Tempelkan link lengkap. ID akan diekstrak otomatis.</p>
+                                    {initialData.spreadsheet_id && (
+                                        <p className="text-[11px] text-green-600 font-medium mt-1">✅ ID: <code className="bg-green-50 px-1 rounded text-[10px]">{initialData.spreadsheet_id}</code></p>
+                                    )}
+                                </div>
+                                <SubmitBtn loading={savingSpreadsheet} label="Simpan Spreadsheet" />
+                            </form>
+                        </Card>
 
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2" htmlFor="email">
-                                    Alamat Email
-                                </label>
-                                <input
-                                    id="email"
-                                    name="email"
-                                    type="email"
-                                    defaultValue={initialData.email}
-                                    required
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#15A4FA] focus:border-transparent transition-all text-gray-900"
-                                />
-                                <p className="text-xs text-gray-500 mt-2 flex items-start gap-1">
-                                    <svg className="w-4 h-4 shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    Catatan: Jika Anda mengubah email, kami akan mengirimkan tautan verifikasi ke email baru Anda. Perubahan akan aktif setelah Anda memverifikasinya.
-                                </p>
-                            </div>
-
-                            <button
-                                type="submit"
-                                disabled={savingDetails}
-                                className="w-full md:w-auto py-3 px-6 bg-[#00529C] hover:bg-[#004280] text-white font-semibold rounded-xl transition duration-200 flex items-center justify-center gap-2 shadow-[0_4px_14px_0_rgba(0,82,156,0.39)]"
-                            >
-                                {savingDetails ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                                {savingDetails ? 'Menyimpan...' : 'Simpan Perubahan'}
-                            </button>
-                        </form>
+                        {/* Password */}
+                        <Card icon={<KeyRound className="w-4.5 h-4.5 text-[#00529C]" />} title="Ubah Password">
+                            <form onSubmit={(e) => handleForm(updatePasswordAction, setSavingPassword, e, true)} className="space-y-4">
+                                <Input id="newPassword" name="newPassword" label="Password Baru" type="password" required minLength={6} placeholder="Minimal 6 karakter" />
+                                <Input id="confirmPassword" name="confirmPassword" label="Konfirmasi Password" type="password" required minLength={6} placeholder="Ketik ulang" />
+                                <SubmitBtn loading={savingPassword} label="Perbarui Password" variant="dark" />
+                            </form>
+                        </Card>
                     </div>
                 </div>
+            )}
 
-                {/* Spreadsheet URL Form */}
-                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="px-8 py-5 border-b border-gray-100 flex items-center gap-3 bg-gray-50/50">
-                        <Link2 className="w-5 h-5 text-[#00529C]" />
-                        <h2 className="text-lg font-bold text-gray-900">Konfigurasi Spreadsheet</h2>
-                    </div>
-                    <div className="p-8">
-                        <form onSubmit={handleSpreadsheetUpdate} className="space-y-5">
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2" htmlFor="spreadsheetUrl">
-                                    URL Google Spreadsheet
-                                </label>
-                                <input
-                                    id="spreadsheetUrl"
-                                    name="spreadsheetUrl"
-                                    type="url"
-                                    defaultValue={spreadsheetDisplayUrl}
-                                    placeholder="https://docs.google.com/spreadsheets/d/1A2B3C4D5E/edit#gid=0"
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#15A4FA] focus:border-transparent transition-all text-gray-900 text-sm"
-                                />
-                                <p className="text-xs text-gray-500 mt-2">
-                                    Tempelkan link lengkap Google Spreadsheet Anda. Sistem akan otomatis mengekstrak ID dari URL.
-                                </p>
-                                {initialData.spreadsheet_id && (
-                                    <p className="text-xs text-green-600 mt-1 font-medium">
-                                        ✅ Spreadsheet ID tersimpan: <code className="bg-green-50 px-1.5 py-0.5 rounded text-[11px]">{initialData.spreadsheet_id}</code>
-                                    </p>
-                                )}
-                            </div>
+            {/* ─── Tab: Ibadah ────────────────────────────────────────────── */}
+            {activeTab === 'ibadah' && (
+                <Card icon={<BookOpen className="w-4.5 h-4.5 text-[#00529C]" />} title="Konfigurasi Chart Ibadah">
+                    <p className="text-xs text-gray-500 mb-5 leading-relaxed">
+                        Tentukan nama sheet dan range sel di Google Spreadsheet yang berisi data ibadah. Sistem akan membaca data dari konfigurasi ini.
+                    </p>
+                    <form onSubmit={(e) => handleForm(updateSheetConfigAction, setSavingIbadah, e)} className="space-y-4 max-w-lg">
+                        <Input id="ibadahSheet" name="ibadahSheet" label="Nama Sheet Ibadah" defaultValue={sc.ibadah_sheet || sc.ibadah_sheet_name || 'LaporanIbadah'} placeholder="LaporanIbadah" />
+                        <Input id="rerataRange" name="rerataRange" label="Range Sel Rerata (Opsional)" defaultValue={sc.rerata_range || ''} placeholder="Tahun ke-1!AJ12:AJ19" />
+                        <SubmitBtn loading={savingIbadah} label="Simpan Konfigurasi Ibadah" />
+                    </form>
+                </Card>
+            )}
 
-                            <button
-                                type="submit"
-                                disabled={savingSpreadsheet}
-                                className="w-full md:w-auto py-3 px-6 bg-[#00529C] hover:bg-[#004280] text-white font-semibold rounded-xl transition duration-200 flex items-center justify-center gap-2 shadow-[0_4px_14px_0_rgba(0,82,156,0.39)]"
-                            >
-                                {savingSpreadsheet ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                                {savingSpreadsheet ? 'Menyimpan...' : 'Simpan Spreadsheet'}
-                            </button>
-                        </form>
-                    </div>
-                </div>
-
-                {/* Chart Config Form */}
-                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="px-8 py-5 border-b border-gray-100 flex items-center gap-3 bg-gray-50/50">
-                        <Settings2 className="w-5 h-5 text-[#00529C]" />
-                        <h2 className="text-lg font-bold text-gray-900">Konfigurasi Chart</h2>
-                    </div>
-                    <div className="p-8">
-                        <form onSubmit={handleConfigUpdate} className="space-y-5">
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2" htmlFor="ibadahSheet">
-                                    Nama Sheet Ibadah
-                                </label>
-                                <input
-                                    id="ibadahSheet"
-                                    name="ibadahSheet"
-                                    type="text"
-                                    defaultValue={initialData.sheet_config?.ibadah_sheet || 'LaporanIbadah'}
-                                    placeholder="LaporanIbadah"
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#15A4FA] focus:border-transparent transition-all text-gray-900"
-                                />
-                                <p className="text-xs text-gray-500 mt-2">
-                                    Nama tab/sheet untuk data ibadah harian (default: LaporanIbadah)
-                                </p>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2" htmlFor="rerataRange">
-                                    Range Sel Rerata (Opsional)
-                                </label>
-                                <input
-                                    id="rerataRange"
-                                    name="rerataRange"
-                                    type="text"
-                                    defaultValue={initialData.sheet_config?.rerata_range || ''}
-                                    placeholder="Tahun ke-1!AJ12:AJ19"
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#15A4FA] focus:border-transparent transition-all text-gray-900"
-                                />
-                                <p className="text-xs text-gray-500 mt-2">
-                                    Range sel yang berisi kolom &quot;Rerata&quot; untuk chart bulanan. Kosongkan jika tidak ada.
-                                </p>
-                            </div>
-
-                            <button
-                                type="submit"
-                                disabled={savingConfig}
-                                className="w-full md:w-auto py-3 px-6 bg-[#00529C] hover:bg-[#004280] text-white font-semibold rounded-xl transition duration-200 flex items-center justify-center gap-2 shadow-[0_4px_14px_0_rgba(0,82,156,0.39)]"
-                            >
-                                {savingConfig ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                                {savingConfig ? 'Menyimpan...' : 'Simpan Konfigurasi'}
-                            </button>
-                        </form>
-                    </div>
-                </div>
-
-                {/* Password Form */}
-                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="px-8 py-5 border-b border-gray-100 flex items-center gap-3 bg-gray-50/50">
-                        <KeyRound className="w-5 h-5 text-[#00529C]" />
-                        <h2 className="text-lg font-bold text-gray-900">Ubah Password</h2>
-                    </div>
-                    <div className="p-8">
-                        <form onSubmit={handlePasswordUpdate} className="space-y-5">
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2" htmlFor="newPassword">
-                                    Password Baru
-                                </label>
-                                <input
-                                    id="newPassword"
-                                    name="newPassword"
-                                    type="password"
-                                    required
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#15A4FA] focus:border-transparent transition-all text-gray-900"
-                                    placeholder="Minimal 6 karakter"
-                                    minLength={6}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2" htmlFor="confirmPassword">
-                                    Konfirmasi Password Baru
-                                </label>
-                                <input
-                                    id="confirmPassword"
-                                    name="confirmPassword"
-                                    type="password"
-                                    required
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#15A4FA] focus:border-transparent transition-all text-gray-900"
-                                    placeholder="Ketik ulang password baru"
-                                    minLength={6}
-                                />
-                            </div>
-
-                            <button
-                                type="submit"
-                                disabled={savingPassword}
-                                className="w-full md:w-auto py-3 px-6 bg-gray-800 hover:bg-gray-900 text-white font-semibold rounded-xl transition duration-200 flex items-center justify-center gap-2 shadow-md"
-                            >
-                                {savingPassword ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                                {savingPassword ? 'Menyimpan...' : 'Perbarui Password'}
-                            </button>
-                        </form>
-                    </div>
-                </div>
-
-            </div>
+            {/* ─── Tab: Pendidikan ────────────────────────────────────────── */}
+            {activeTab === 'pendidikan' && (
+                <Card icon={<GraduationCap className="w-4.5 h-4.5 text-[#00529C]" />} title="Konfigurasi Chart Pendidikan">
+                    <p className="text-xs text-gray-500 mb-5 leading-relaxed">
+                        Tentukan range sel untuk data pendidikan. Sistem akan membaca data IP/IPK dan capaian dari Spreadsheet sesuai konfigurasi ini.
+                    </p>
+                    <form onSubmit={(e) => handleForm(updateEducationConfigAction, setSavingPendidikan, e)} className="space-y-4 max-w-lg">
+                        <Input id="ipIpkRange" name="ipIpkRange" label="Range IP & IPK" defaultValue={sc.ip_ipk_range || ''} placeholder="Perkuliahan!B2:D10" />
+                        <Input id="pembinaanRange" name="pembinaanRange" label="Range Pembinaan S/H Skills" defaultValue={sc.pembinaan_range || ''} placeholder="Pembinaan!A2:B20" />
+                        <Input id="prestasiRange" name="prestasiRange" label="Range Riwayat Prestasi" defaultValue={sc.prestasi_range || ''} placeholder="Prestasi!A2:C10" />
+                        <Input id="organisasiRange" name="organisasiRange" label="Range Riwayat Organisasi" defaultValue={sc.organisasi_range || ''} placeholder="Organisasi!A2:B10" />
+                        <Input id="workshopRange" name="workshopRange" label="Range Workshop / Seminar" defaultValue={sc.workshop_range || ''} placeholder="Workshop!A2:B15" />
+                        <SubmitBtn loading={savingPendidikan} label="Simpan Konfigurasi Pendidikan" />
+                    </form>
+                </Card>
+            )}
         </div>
+    )
+}
+
+// ─── Reusable UI helpers ──────────────────────────────────────────────
+
+function Card({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+    return (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2.5 bg-gray-50/50">
+                {icon}
+                <h2 className="text-base font-bold text-gray-900">{title}</h2>
+            </div>
+            <div className="p-6">{children}</div>
+        </div>
+    )
+}
+
+function Input({ id, label, ...props }: { id: string; label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+    return (
+        <div>
+            <label htmlFor={id} className="block text-xs font-semibold text-gray-700 mb-1.5">{label}</label>
+            <input id={id} {...props} className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#15A4FA]/40 focus:border-transparent transition-all text-gray-900" />
+        </div>
+    )
+}
+
+function SubmitBtn({ loading, label, variant }: { loading: boolean; label: string; variant?: 'dark' }) {
+    const bg = variant === 'dark' ? 'bg-gray-800 hover:bg-gray-900 shadow-md' : 'bg-[#00529C] hover:bg-[#004280] shadow-[0_4px_14px_0_rgba(0,82,156,0.39)]'
+    return (
+        <button type="submit" disabled={loading} className={`py-2.5 px-5 ${bg} text-white text-sm font-semibold rounded-xl transition flex items-center gap-2 disabled:opacity-60`}>
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            {loading ? 'Menyimpan...' : label}
+        </button>
     )
 }

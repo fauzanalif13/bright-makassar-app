@@ -21,16 +21,15 @@ export default async function ProfilePage() {
         email: user.email || '',
         avatar_url: user.user_metadata?.avatar_url || '',
         spreadsheet_id: userData?.spreadsheet_id || '',
-        sheet_config: (userData?.sheet_config as { ibadah_sheet?: string; rerata_range?: string } | null) || null,
+        sheet_config: (userData?.sheet_config as Record<string, string> | null) || null,
     }
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-6">
             <div>
-                <h1 className="text-3xl font-black text-gray-900 tracking-tight">Pengaturan Profil</h1>
-                <p className="text-gray-500 mt-1 max-w-2xl leading-relaxed">Kelola identitas publik, alamat email, kata sandi, dan foto profil Anda. Beberapa perubahan mungkin memerlukan verifikasi masuk ulang.</p>
+                <h1 className="text-2xl font-black text-gray-900 tracking-tight">Pengaturan Profil</h1>
+                <p className="text-gray-500 text-sm mt-1">Kelola identitas, konfigurasi spreadsheet, dan kata sandi Anda.</p>
             </div>
-
             <ProfileForms initialData={initialData} />
         </div>
     )

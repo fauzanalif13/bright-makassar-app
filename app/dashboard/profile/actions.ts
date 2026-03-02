@@ -135,3 +135,46 @@ export async function updateSheetConfigAction(formData: FormData) {
 
     return { success: 'Konfigurasi chart berhasil disimpan! ✅' }
 }
+
+export async function updateEducationConfigAction(formData: FormData) {
+    const ipIpkRange = (formData.get('ipIpkRange') as string)?.trim() || ''
+    const pembinaanRange = (formData.get('pembinaanRange') as string)?.trim() || ''
+    const prestasiRange = (formData.get('prestasiRange') as string)?.trim() || ''
+    const organisasiRange = (formData.get('organisasiRange') as string)?.trim() || ''
+    const workshopRange = (formData.get('workshopRange') as string)?.trim() || ''
+
+    const supabase = await createClient()
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
+        return { error: 'Sesi Anda telah kedaluwarsa. Silakan login kembali.' }
+    }
+
+    // Fetch existing sheet_config to merge
+    const { data: existing } = await supabase
+        .from('roles_pengguna')
+        .select('sheet_config')
+        .eq('email', user.email)
+        .single()
+
+    const currentConfig = (existing?.sheet_config as Record<string, unknown>) || {}
+
+    const updatedConfig = {
+        ...currentConfig,
+        ip_ipk_range: ipIpkRange,
+        pembinaan_range: pembinaanRange,
+        prestasi_range: prestasiRange,
+        organisasi_range: organisasiRange,
+        workshop_range: workshopRange,
+    }
+
+    const { error: updateError } = await supabase
+        .from('roles_pengguna')
+        .update({ sheet_config: updatedConfig })
+        .eq('email', user.email)
+
+    if (updateError) {
+        return { error: 'Gagal menyimpan konfigurasi pendidikan.' }
+    }
+
+    return { success: 'Konfigurasi pendidikan berhasil disimpan! ✅' }
+}
