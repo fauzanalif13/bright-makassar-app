@@ -2,14 +2,16 @@
 
 import { useState } from 'react'
 import toast from 'react-hot-toast'
-import { updatePasswordAction, updateProfileDetailsAction } from './actions'
+import { updatePasswordAction, updateProfileDetailsAction, updateSpreadsheetAction, updateSheetConfigAction } from './actions'
 import { uploadAvatarAction } from './avatar-actions'
-import { Camera, Loader2, Save, KeyRound, User } from 'lucide-react'
+import { Camera, Loader2, Save, KeyRound, User, Link2, Settings2 } from 'lucide-react'
 
 type ProfileData = {
     name: string
     email: string
     avatar_url: string
+    spreadsheet_id: string
+    sheet_config: { ibadah_sheet?: string; rerata_range?: string } | null
 }
 
 export default function ProfileForms({ initialData }: { initialData: ProfileData }) {
@@ -17,6 +19,8 @@ export default function ProfileForms({ initialData }: { initialData: ProfileData
     const [uploading, setUploading] = useState(false)
     const [savingDetails, setSavingDetails] = useState(false)
     const [savingPassword, setSavingPassword] = useState(false)
+    const [savingSpreadsheet, setSavingSpreadsheet] = useState(false)
+    const [savingConfig, setSavingConfig] = useState(false)
 
     async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
         if (!e.target.files || e.target.files.length === 0) return
@@ -36,7 +40,7 @@ export default function ProfileForms({ initialData }: { initialData: ProfileData
                 setAvatar(result.avatarUrl)
                 toast.success(result.success, { id: loadingToast })
             }
-        } catch (err) {
+        } catch {
             toast.error('Terjadi kesalahan saat mengunggah.', { id: loadingToast })
         } finally {
             setUploading(false)
@@ -55,7 +59,7 @@ export default function ProfileForms({ initialData }: { initialData: ProfileData
             } else if (result.success) {
                 toast.success(result.success, { duration: 5000 })
             }
-        } catch (err) {
+        } catch {
             toast.error('Terjadi kesalahan yang tidak terduga.')
         } finally {
             setSavingDetails(false)
@@ -77,12 +81,55 @@ export default function ProfileForms({ initialData }: { initialData: ProfileData
                 toast.success(result.success)
                 form.reset()
             }
-        } catch (err) {
+        } catch {
             toast.error('Terjadi kesalahan yang tidak terduga.')
         } finally {
             setSavingPassword(false)
         }
     }
+
+    async function handleSpreadsheetUpdate(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault()
+        setSavingSpreadsheet(true)
+
+        const formData = new FormData(e.currentTarget)
+        try {
+            const result = await updateSpreadsheetAction(formData)
+            if (result.error) {
+                toast.error(result.error)
+            } else if (result.success) {
+                toast.success(result.success)
+            }
+        } catch {
+            toast.error('Terjadi kesalahan yang tidak terduga.')
+        } finally {
+            setSavingSpreadsheet(false)
+        }
+    }
+
+    async function handleConfigUpdate(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault()
+        setSavingConfig(true)
+
+        const formData = new FormData(e.currentTarget)
+        try {
+            const result = await updateSheetConfigAction(formData)
+            if (result.error) {
+                toast.error(result.error)
+            } else if (result.success) {
+                toast.success(result.success)
+            }
+        } catch {
+            toast.error('Terjadi kesalahan yang tidak terduga.')
+        } finally {
+            setSavingConfig(false)
+        }
+    }
+
+    // Build display URL from spreadsheet_id
+    const spreadsheetDisplayUrl = initialData.spreadsheet_id
+        ? `https://docs.google.com/spreadsheets/d/${initialData.spreadsheet_id}/edit`
+        : ''
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -170,6 +217,102 @@ export default function ProfileForms({ initialData }: { initialData: ProfileData
                             >
                                 {savingDetails ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                                 {savingDetails ? 'Menyimpan...' : 'Simpan Perubahan'}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                {/* Spreadsheet URL Form */}
+                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="px-8 py-5 border-b border-gray-100 flex items-center gap-3 bg-gray-50/50">
+                        <Link2 className="w-5 h-5 text-[#00529C]" />
+                        <h2 className="text-lg font-bold text-gray-900">Konfigurasi Spreadsheet</h2>
+                    </div>
+                    <div className="p-8">
+                        <form onSubmit={handleSpreadsheetUpdate} className="space-y-5">
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2" htmlFor="spreadsheetUrl">
+                                    URL Google Spreadsheet
+                                </label>
+                                <input
+                                    id="spreadsheetUrl"
+                                    name="spreadsheetUrl"
+                                    type="url"
+                                    defaultValue={spreadsheetDisplayUrl}
+                                    placeholder="https://docs.google.com/spreadsheets/d/1A2B3C4D5E/edit#gid=0"
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#15A4FA] focus:border-transparent transition-all text-gray-900 text-sm"
+                                />
+                                <p className="text-xs text-gray-500 mt-2">
+                                    Tempelkan link lengkap Google Spreadsheet Anda. Sistem akan otomatis mengekstrak ID dari URL.
+                                </p>
+                                {initialData.spreadsheet_id && (
+                                    <p className="text-xs text-green-600 mt-1 font-medium">
+                                        ✅ Spreadsheet ID tersimpan: <code className="bg-green-50 px-1.5 py-0.5 rounded text-[11px]">{initialData.spreadsheet_id}</code>
+                                    </p>
+                                )}
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={savingSpreadsheet}
+                                className="w-full md:w-auto py-3 px-6 bg-[#00529C] hover:bg-[#004280] text-white font-semibold rounded-xl transition duration-200 flex items-center justify-center gap-2 shadow-[0_4px_14px_0_rgba(0,82,156,0.39)]"
+                            >
+                                {savingSpreadsheet ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                                {savingSpreadsheet ? 'Menyimpan...' : 'Simpan Spreadsheet'}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                {/* Chart Config Form */}
+                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="px-8 py-5 border-b border-gray-100 flex items-center gap-3 bg-gray-50/50">
+                        <Settings2 className="w-5 h-5 text-[#00529C]" />
+                        <h2 className="text-lg font-bold text-gray-900">Konfigurasi Chart</h2>
+                    </div>
+                    <div className="p-8">
+                        <form onSubmit={handleConfigUpdate} className="space-y-5">
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2" htmlFor="ibadahSheet">
+                                    Nama Sheet Ibadah
+                                </label>
+                                <input
+                                    id="ibadahSheet"
+                                    name="ibadahSheet"
+                                    type="text"
+                                    defaultValue={initialData.sheet_config?.ibadah_sheet || 'LaporanIbadah'}
+                                    placeholder="LaporanIbadah"
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#15A4FA] focus:border-transparent transition-all text-gray-900"
+                                />
+                                <p className="text-xs text-gray-500 mt-2">
+                                    Nama tab/sheet untuk data ibadah harian (default: LaporanIbadah)
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2" htmlFor="rerataRange">
+                                    Range Sel Rerata (Opsional)
+                                </label>
+                                <input
+                                    id="rerataRange"
+                                    name="rerataRange"
+                                    type="text"
+                                    defaultValue={initialData.sheet_config?.rerata_range || ''}
+                                    placeholder="Tahun ke-1!AJ12:AJ19"
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#15A4FA] focus:border-transparent transition-all text-gray-900"
+                                />
+                                <p className="text-xs text-gray-500 mt-2">
+                                    Range sel yang berisi kolom &quot;Rerata&quot; untuk chart bulanan. Kosongkan jika tidak ada.
+                                </p>
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={savingConfig}
+                                className="w-full md:w-auto py-3 px-6 bg-[#00529C] hover:bg-[#004280] text-white font-semibold rounded-xl transition duration-200 flex items-center justify-center gap-2 shadow-[0_4px_14px_0_rgba(0,82,156,0.39)]"
+                            >
+                                {savingConfig ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                                {savingConfig ? 'Menyimpan...' : 'Simpan Konfigurasi'}
                             </button>
                         </form>
                     </div>

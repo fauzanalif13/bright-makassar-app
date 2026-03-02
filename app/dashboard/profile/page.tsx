@@ -12,14 +12,16 @@ export default async function ProfilePage() {
 
     const { data: userData } = await supabase
         .from('roles_pengguna')
-        .select('name')
+        .select('name, spreadsheet_id, sheet_config')
         .eq('email', user.email)
         .single()
 
     const initialData = {
         name: userData?.name || user.email?.split('@')[0] || '',
         email: user.email || '',
-        avatar_url: user.user_metadata?.avatar_url || ''
+        avatar_url: user.user_metadata?.avatar_url || '',
+        spreadsheet_id: userData?.spreadsheet_id || '',
+        sheet_config: (userData?.sheet_config as { ibadah_sheet?: string; rerata_range?: string } | null) || null,
     }
 
     return (

@@ -1,6 +1,9 @@
 import { createClient } from '@/src/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import { FasilitatorBarChart } from '@/src/components/charts/FasilitatorCharts'
+import type { FasilitatorChartData } from '@/src/components/charts/FasilitatorCharts'
+import { getIbadahMonthlyAverage } from '@/src/lib/googleSheets'
+import type { IbadahActivity, IbadahAverage } from '@/src/lib/googleSheets'
 import { Bell, Award, UserCheck } from 'lucide-react'
 
 export default async function FasilitatorDashboard() {
@@ -27,6 +30,69 @@ export default async function FasilitatorDashboard() {
 
     const displayName = userData?.name || user.email?.split('@')[0] || 'Fasilitator'
 
+    // ─── Aggregation: fetch all active awardees' ibadah data ─────────
+    let aggregatedData: FasilitatorChartData[] = []
+
+    try {
+        const { data: awardees } = await supabase
+            .from('roles_pengguna')
+            .select('name, spreadsheet_id')
+            .eq('role', 'awardee')
+            .eq('status', 'aktif')
+
+        if (awardees && awardees.length > 0) {
+            const now = new Date()
+            const currentMonth = now.getMonth() + 1
+            const currentYear = now.getFullYear()
+
+            // Fetch ibadah averages for all awardees concurrently
+            const results = await Promise.all(
+                awardees
+                    .filter((a) => a.spreadsheet_id) // skip those without spreadsheets
+                    .map(async (awardee) => {
+                        try {
+                            const avg = await getIbadahMonthlyAverage(
+                                awardee.spreadsheet_id,
+                                'LaporanIbadah',
+                                currentMonth,
+                                currentYear
+                            )
+                            return avg
+                        } catch {
+                            return null // skip on error
+                        }
+                    })
+            )
+
+            const validResults = results.filter((r): r is IbadahAverage => r !== null)
+
+            if (validResults.length > 0) {
+                // Calculate Grand Average for each activity (exclude Tilawah for percentage chart)
+                const activities: IbadahActivity[] = [
+                    "Shalat Berjama'ah",
+                    "Qiyamul Lail",
+                    "Dzikir Pagi",
+                    "Mendo'akan",
+                    "Shalat Dhuha",
+                    "Membaca Al-Quran",
+                    "Shaum Sunnah",
+                    "Berinfak",
+                ]
+
+                aggregatedData = activities.map((activity) => {
+                    const sum = validResults.reduce((acc, r) => acc + r[activity], 0)
+                    const avg = Math.round(sum / validResults.length)
+                    return {
+                        name: activity.replace('Shalat ', ''),
+                        capaian: avg,
+                    }
+                })
+            }
+        }
+    } catch (err) {
+        console.error('Failed to aggregate fasilitator data:', err)
+    }
+
     return (
         <div className="space-y-8">
             <div className="bg-gradient-to-r from-[#00529C] to-[#15A4FA] rounded-3xl p-8 md:p-10 shadow-lg text-white relative overflow-hidden">
@@ -42,15 +108,11 @@ export default async function FasilitatorDashboard() {
                 <div className="lg:col-span-2 bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
                     <div className="flex justify-between items-center mb-6">
                         <div>
-                            <h2 className="text-xl font-bold text-gray-900">Statistik Ibadah per Angkatan</h2>
-                            <p className="text-sm text-gray-500">Rata-rata skor ibadah dalam 30 hari terakhir</p>
+                            <h2 className="text-xl font-bold text-gray-900">Rerata Ibadah Awardee (Angkatan)</h2>
+                            <p className="text-sm text-gray-500">Rata-rata capaian ibadah seluruh awardee aktif bulan ini</p>
                         </div>
-                        <select className="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-xl focus:ring-[#15A4FA] focus:border-[#15A4FA] block p-2.5 outline-none">
-                            <option>Bulan Ini</option>
-                            <option>Bulan Lalu</option>
-                        </select>
                     </div>
-                    <FasilitatorBarChart />
+                    <FasilitatorBarChart data={aggregatedData} />
                 </div>
 
                 {/* Activity Feed Section */}
