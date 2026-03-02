@@ -111,57 +111,6 @@ export default async function AwardeeDashboard() {
                 </div>
             </div>
 
-            {/* Grup Chart Pendidikan & Ibadah */}
-            <div className="grid grid-cols-1 gap-8">
-                {/* Pendidikan Chart */}
-                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 flex flex-col">
-                    <div className="flex justify-between items-center mb-6">
-                        <div>
-                            <h2 className="text-xl font-bold text-[#00529C]">Grafik Pendidikan</h2>
-                            <p className="text-sm text-gray-500">Capaian Akademik & Skill Bulan Ini</p>
-                        </div>
-                    </div>
-                    <div className="flex-1 min-h-[300px]">
-                        <AwardeePendidikanChart />
-                    </div>
-                </div>
-
-                {/* Ibadah Charts */}
-                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 flex flex-col">
-                    <div className="flex justify-between items-center mb-6">
-                        <div>
-                            <h2 className="text-xl font-bold text-[#00529C]">Grafik Ibadah</h2>
-                            <p className="text-sm text-gray-500">
-                                Pantauan Harian & Rata-rata Bulan Ini - <span className="font-semibold text-[#15A4FA]">{ibadahSheetTarget}</span>
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
-                        {/* Chart Harian */}
-                        <div className="flex-1 w-full">
-                            <h3 className="text-sm font-semibold text-gray-700 text-center mb-2">Tren Harian</h3>
-                            {/* Untuk sementara data harian dikosongkan agar memunculkan UI fallback "Belum ada data" */}
-                            <AwardeeIbadahDailyChart data={[]} /> 
-                        </div>
-
-                        {/* Chart Bulanan (Rerata) */}
-                        <div className="flex-1 w-full">
-                            <h3 className="text-sm font-semibold text-gray-700 text-center mb-2">Rerata Capaian (%)</h3>
-                            {ibadahChartData.length > 0 ? (
-                                <AwardeeIbadahMonthlyChart data={ibadahChartData} />
-                            ) : (
-                                <div className="h-72 w-full mt-4 flex items-center justify-center">
-                                    <p className="text-gray-400 font-medium italic text-center">
-                                        Data rerata belum tersedia.
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             {/* Announcements Section */}
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
                 <div className="flex items-center gap-3 mb-6">
@@ -208,6 +157,57 @@ export default async function AwardeeDashboard() {
                                     <span className="text-xs font-semibold text-gray-400">Oleh: Fasilitator</span>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Grup Chart Pendidikan & Ibadah */}
+            <div className="grid grid-cols-1 gap-8">
+                {/* Pendidikan Chart */}
+                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 flex flex-col">
+                    <div className="flex justify-between items-center mb-6">
+                        <div>
+                            <h2 className="text-xl font-bold text-[#00529C]">Grafik Pendidikan</h2>
+                            <p className="text-sm text-gray-500">Capaian Akademik & Skill Bulan Ini</p>
+                        </div>
+                    </div>
+                    <div className="flex-1 min-h-[300px]">
+                        <AwardeePendidikanChart />
+                    </div>
+                </div>
+
+                {/* Ibadah Charts */}
+                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 flex flex-col">
+                    <div className="flex justify-between items-center mb-6">
+                        <div>
+                            <h2 className="text-xl font-bold text-[#00529C]">Grafik Ibadah</h2>
+                            <p className="text-sm text-gray-500">
+                                Pantauan Harian & Rata-rata Bulan Ini - <span className="font-semibold text-[#15A4FA]">{ibadahSheetTarget}</span>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
+                        {/* Chart Harian */}
+                        <div className="flex-1 w-full">
+                            <h3 className="text-sm font-semibold text-gray-700 text-center mb-2">Tren Harian</h3>
+                            {/* Untuk sementara data harian dikosongkan agar memunculkan UI fallback "Belum ada data" */}
+                            <AwardeeIbadahDailyChart data={[]} /> 
+                        </div>
+
+                        {/* Chart Bulanan (Rerata) */}
+                        <div className="flex-1 w-full">
+                            <h3 className="text-sm font-semibold text-gray-700 text-center mb-2">Rerata Capaian (%)</h3>
+                            {ibadahChartData.length > 0 ? (
+                                <AwardeeIbadahMonthlyChart data={ibadahChartData} />
+                            ) : (
+                                <div className="h-72 w-full mt-4 flex items-center justify-center">
+                                    <p className="text-gray-400 font-medium italic text-center">
+                                        Data rerata belum tersedia.
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
