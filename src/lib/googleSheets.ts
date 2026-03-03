@@ -530,3 +530,283 @@ export async function updateSheetRow(
         requestBody: { values },
     });
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// WRITE OPERATIONS — Fixed Grid (Ibadah) & Dynamic Table (Resume)
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * Batch-update multiple ranges in a Google Sheet in a single API call.
+ * Used for Ibadah fixed-grid updates where users change multiple cells at once.
+ *
+ * @example
+ * await updateFixedGrid(spreadsheetId, [
+ *   { range: "'Tahun ke-1'!H13", values: [[3]] },
+ *   { range: "'Tahun ke-1'!I14", values: [[1]] },
+ * ]);
+ */
+export async function updateFixedGrid(
+    spreadsheetId: string,
+    data: { range: string; values: (string | number | boolean)[][] }[]
+): Promise<void> {
+    if (!data.length) return;
+
+    const auth = getAuthClient();
+    const sheets = google.sheets({ version: 'v4', auth });
+
+    await sheets.spreadsheets.values.batchUpdate({
+        spreadsheetId,
+        requestBody: {
+            valueInputOption: 'USER_ENTERED',
+            data: data.map((d) => ({
+                range: d.range,
+                values: d.values,
+            })),
+        },
+    });
+}
+
+/**
+ * Resolve a sheet's string name to its numeric sheetId.
+ * Required by insertDimension which needs the numeric ID, not the name.
+ *
+ * @throws Error if the sheet name is not found in the spreadsheet.
+ */
+async function getSheetId(
+    spreadsheetId: string,
+    sheetName: string
+): Promise<number> {
+    const auth = getAuthClient();
+    const sheets = google.sheets({ version: 'v4', auth });
+
+    const response = await sheets.spreadsheets.get({
+        spreadsheetId,
+        fields: 'sheets.properties',
+    });
+
+    const sheetsList = response.data.sheets || [];
+    const match = sheetsList.find(
+        (s) => s.properties?.title === sheetName
+    );
+
+    if (!match || match.properties?.sheetId == null) {
+        throw new Error(
+            `Sheet "${sheetName}" not found in spreadsheet "${spreadsheetId}". ` +
+            `Available sheets: ${sheetsList.map((s) => s.properties?.title).join(', ')}`
+        );
+    }
+
+    return match.properties!.sheetId!;
+}
+
+/**
+ * Find the bottom row of a specific stacked table in the Resume sheet.
+ *
+ * Scans columns A and B for the anchorText (e.g. "Riwayat Organisasi"),
+ * then walks down to find the last filled row of that table.
+ *
+ * @param spreadsheetId - Google Sheets spreadsheet ID
+ * @param sheetName     - Sheet name (e.g. "Resume")
+ * @param anchorText    - Table header text (e.g. "Riwayat Organisasi", "Social Project")
+ * @returns 1-based row index where a new row should be INSERTED
+ *
+ * @throws Error if anchorText is not found (fail-safe: never insert at random position)
+ */
+export async function findTableBottom(
+    spreadsheetId: string,
+    sheetName: string,
+    anchorText: string
+): Promise<number> {
+    // 1. Fetch columns A and B of the entire sheet
+    const rows = await getSheetData(spreadsheetId, `'${sheetName}'!A:B`);
+
+    if (!rows.length) {
+        throw new Error(
+            `Sheet "${sheetName}" is empty — cannot find anchor "${anchorText}".`
+        );
+    }
+
+    // 2. Find the anchor row (case-insensitive trim match in col A or B)
+    const normalizedAnchor = anchorText.trim().toLowerCase();
+    let anchorRowIdx = -1;
+
+    for (let i = 0; i < rows.length; i++) {
+        const cellA = (rows[i][0] || '').trim().toLowerCase();
+        const cellB = (rows[i][1] || '').trim().toLowerCase();
+
+        if (cellA === normalizedAnchor || cellB === normalizedAnchor) {
+            anchorRowIdx = i;
+            break;
+        }
+    }
+
+    if (anchorRowIdx === -1) {
+        throw new Error(
+            `Anchor text "${anchorText}" not found in sheet "${sheetName}". ` +
+            `Searched ${rows.length} rows in columns A and B. ` +
+            `Refusing to insert — check the exact header text in the spreadsheet.`
+        );
+    }
+
+    console.log(
+        `[findTableBottom] Found anchor "${anchorText}" at row ${anchorRowIdx + 1} (0-based: ${anchorRowIdx})`
+    );
+
+    // 3. Walk down from anchor+1 to find the last filled row of this table
+    let lastFilledRow = anchorRowIdx; // start at anchor itself
+
+    for (let i = anchorRowIdx + 1; i < rows.length; i++) {
+        const cellA = (rows[i][0] || '').trim();
+        const cellB = (rows[i][1] || '').trim();
+
+        // Stop if both columns are empty (end of this table section)
+        if (!cellA && !cellB) break;
+
+        lastFilledRow = i;
+    }
+
+    // 4. The insertion point is right after the last filled row (1-based)
+    const insertionRow = lastFilledRow + 2; // +1 for 0→1 based, +1 for "after"
+
+    console.log(
+        `[findTableBottom] Table "${anchorText}" last filled at row ${lastFilledRow + 1}, ` +
+        `insertion point: row ${insertionRow}`
+    );
+
+    return insertionRow;
+}
+
+/**
+ * Insert a new row into a specific stacked table in the Resume sheet
+ * and write data into it. Uses anchor-based positioning to avoid
+ * corrupting adjacent tables.
+ *
+ * @param spreadsheetId - Google Sheets spreadsheet ID
+ * @param sheetName     - Sheet name (e.g. "Resume")
+ * @param anchorText    - Table header text (e.g. "Riwayat Organisasi")
+ * @param newDataArray  - Array of cell values for the new row
+ *                        (e.g. ["2026", "Nama Kegiatan", "Deskripsi", "https://link"])
+ * @returns Object with the 1-based row index where data was inserted
+ *
+ * @throws Error if anchorText not found, sheet doesn't exist, or newDataArray is empty
+ */
+export async function insertAndWriteResumeData(
+    spreadsheetId: string,
+    sheetName: string,
+    anchorText: string,
+    newDataArray: (string | number | boolean)[]
+): Promise<{ insertedAtRow: number }> {
+    // Validate input
+    if (!newDataArray || newDataArray.length === 0) {
+        throw new Error(
+            'newDataArray must not be empty — refusing to insert a blank row.'
+        );
+    }
+
+    // 1. Find where to insert
+    const targetRow = await findTableBottom(spreadsheetId, sheetName, anchorText);
+
+    console.log(
+        `[insertAndWriteResumeData] Will insert at row ${targetRow} for table "${anchorText}"`
+    );
+
+    // 2. Resolve numeric sheet ID (needed for insertDimension)
+    const sheetId = await getSheetId(spreadsheetId, sheetName);
+
+    // 3. Insert a blank row at the target position
+    const auth = getAuthClient();
+    const sheets = google.sheets({ version: 'v4', auth });
+
+    await sheets.spreadsheets.batchUpdate({
+        spreadsheetId,
+        requestBody: {
+            requests: [
+                {
+                    insertDimension: {
+                        range: {
+                            sheetId,
+                            dimension: 'ROWS',
+                            startIndex: targetRow - 1, // API uses 0-based index
+                            endIndex: targetRow,       // exclusive — inserts exactly 1 row
+                        },
+                        inheritFromBefore: true, // copy formatting from row above
+                    },
+                },
+            ],
+        },
+    });
+
+    console.log(
+        `[insertAndWriteResumeData] Inserted blank row at position ${targetRow}`
+    );
+
+    // 4. Write data into the newly created row
+    const writeRange = `'${sheetName}'!A${targetRow}`;
+    await sheets.spreadsheets.values.update({
+        spreadsheetId,
+        range: writeRange,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: {
+            values: [newDataArray],
+        },
+    });
+
+    console.log(
+        `[insertAndWriteResumeData] Wrote ${newDataArray.length} cells to ${writeRange}`
+    );
+
+    return { insertedAtRow: targetRow };
+}
+
+/**
+ * Count the number of data rows under a specific table anchor in a sheet.
+ * Useful for dynamically computing achievement counts (e.g. "Pembinaan: 42")
+ * without relying on a static range that can break when rows are inserted.
+ *
+ * @param spreadsheetId - Google Sheets spreadsheet ID
+ * @param sheetName     - Sheet name (e.g. "Resume")
+ * @param anchorText    - Table header text (e.g. "Pembinaan S/H Skills")
+ * @param skipHeaderRows - Number of header rows to skip after the anchor (default: 1)
+ * @returns Number of data rows in the table (excludes anchor and header rows)
+ */
+export async function countTableRows(
+    spreadsheetId: string,
+    sheetName: string,
+    anchorText: string,
+    skipHeaderRows: number = 1
+): Promise<number> {
+    try {
+        const rows = await getSheetData(spreadsheetId, `'${sheetName}'!A:B`);
+
+        // Find anchor
+        const normalizedAnchor = anchorText.trim().toLowerCase();
+        let anchorIdx = -1;
+        for (let i = 0; i < rows.length; i++) {
+            const cellA = (rows[i][0] || '').trim().toLowerCase();
+            const cellB = (rows[i][1] || '').trim().toLowerCase();
+            if (cellA === normalizedAnchor || cellB === normalizedAnchor) {
+                anchorIdx = i;
+                break;
+            }
+        }
+
+        if (anchorIdx === -1) return 0;
+
+        // Count data rows (skip anchor + header rows)
+        const dataStart = anchorIdx + 1 + skipHeaderRows;
+        let count = 0;
+
+        for (let i = dataStart; i < rows.length; i++) {
+            const cellA = (rows[i][0] || '').trim();
+            const cellB = (rows[i][1] || '').trim();
+            if (!cellA && !cellB) break;
+            count++;
+        }
+
+        return count;
+    } catch (err) {
+        console.error(`[countTableRows] Error counting "${anchorText}":`, err);
+        return 0;
+    }
+}
+

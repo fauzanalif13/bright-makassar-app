@@ -1,6 +1,6 @@
 import { createClient } from '@/src/utils/supabase/server'
 import { redirect } from 'next/navigation'
-import { getBatchCellValues, getIbadahRerataPerActivity, getSheetData } from '@/src/lib/googleSheets'
+import { getBatchCellValues, getIbadahRerataPerActivity, getSheetData, countTableRows } from '@/src/lib/googleSheets'
 import type { IbadahActivity } from '@/src/lib/googleSheets'
 import { getFullTimeline, getCategoryCellRefs } from '@/src/lib/ibadahDefaults'
 import AwardeeDashboardClient from '@/src/components/AwardeeDashboardClient'
@@ -197,8 +197,12 @@ export default async function AwardeeDashboard() {
         }
 
         // ─── 4. Achievement Counts ──────────────────────────────────
+        // Uses dynamic anchor-based counting (primary) with static range fallback.
+        // This ensures counts stay in sync even when rows are inserted via forms.
         try {
-            async function countRows(range: string | undefined): Promise<number> {
+            const resumeSheet = (config as any).resume_sheet || 'Resume'
+
+            async function countRowsFallback(range: string | undefined): Promise<number> {
                 if (!range) return 0
                 try {
                     const rows = await getSheetData(spreadsheetId, range)
@@ -206,12 +210,26 @@ export default async function AwardeeDashboard() {
                 } catch { return 0 }
             }
 
-            const [pembinaan, prestasi, organisasi, workshop] = await Promise.all([
-                countRows(config.pembinaan_range),
-                countRows(config.prestasi_range),
-                countRows(config.organisasi_range),
-                countRows(config.workshop_range),
-            ])
+            // Anchor texts matching the table headers in the Resume sheet
+            // skipRows: how many rows after anchor to skip (description + header)
+            const ANCHOR_MAP: { name: string; anchor: string; skipRows: number; fallbackRange?: string }[] = [
+                { name: 'Pembinaan', anchor: 'Pembinaan S/H Skills', skipRows: 2, fallbackRange: config.pembinaan_range },
+                { name: 'Prestasi', anchor: 'Riwayat Prestasi', skipRows: 2, fallbackRange: config.prestasi_range },
+                { name: 'Organisasi', anchor: 'Riwayat Organisasi', skipRows: 2, fallbackRange: config.organisasi_range },
+                { name: 'Workshop', anchor: 'Riwayat Workshop / Seminar', skipRows: 2, fallbackRange: config.workshop_range },
+            ]
+
+            const counts = await Promise.all(
+                ANCHOR_MAP.map(async ({ anchor, skipRows, fallbackRange }) => {
+                    // Try dynamic anchor-based count first
+                    const dynamicCount = await countTableRows(spreadsheetId, resumeSheet, anchor, skipRows)
+                    if (dynamicCount > 0) return dynamicCount
+                    // Fallback to static range if anchor not found or returned 0
+                    return countRowsFallback(fallbackRange)
+                })
+            )
+
+            const [pembinaan, prestasi, organisasi, workshop] = counts
 
             if (pembinaan > 0 || prestasi > 0 || organisasi > 0 || workshop > 0) {
                 achievementData = [

@@ -24,9 +24,30 @@ export default function DashboardShell({
     subtitle,
 }: DashboardShellProps) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-    const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({})
     const pathname = usePathname()
     const { isDark } = useTheme()
+
+    // Helper: check if any child path matches the current pathname
+    const hasActiveChild = (item: MenuItem): boolean => {
+        if (!item.submenu) return false
+        return item.submenu.some(sub =>
+            (sub.path && sub.path !== '#' && pathname.startsWith(sub.path)) ||
+            hasActiveChild(sub)
+        )
+    }
+
+    // Auto-open dropdowns that contain the active child
+    const roleKey = roleName.toUpperCase()
+    const menus = menuConfig[roleKey] || menuConfig['AWARDEE']
+    const [openMenus, setOpenMenus] = useState<Record<string, boolean>>(() => {
+        const initial: Record<string, boolean> = {}
+        menus.forEach(item => {
+            if (item.submenu && hasActiveChild(item)) {
+                initial[item.title] = true
+            }
+        })
+        return initial
+    })
 
     const toggleMenu = (title: string) => {
         setOpenMenus(prev => ({
@@ -35,13 +56,16 @@ export default function DashboardShell({
         }))
     }
 
-    const roleKey = roleName.toUpperCase()
-    const menus = menuConfig[roleKey] || menuConfig['AWARDEE']
-
     const renderMenuItem = (item: MenuItem, depth = 0) => {
         const hasSubmenu = item.submenu && item.submenu.length > 0;
         const isOpen = openMenus[item.title];
-        const isActive = item.path === pathname || (item.path !== '#' && item.path !== '' && pathname.startsWith(item.path || 'invalid_path'));
+
+        // For items WITH a submenu: highlight if any child is active
+        // For leaf items: exact match only (prevents Dashboard from matching all sub-paths)
+        const isActive = hasSubmenu
+            ? hasActiveChild(item)
+            : (item.path === pathname);
+
         const Icon = item.icon;
 
         return (
