@@ -91,7 +91,7 @@ export async function updateSheetConfigAction(formData: FormData) {
     for (let year = 1; year <= 4; year++) {
         const yk = `tahun_${year}`
         const sheetName = `Tahun ke-${year}`
-        
+
         const months: Record<string, string> = {}
         MONTHS.forEach(m => {
             const val = (formData.get(`ibadah_${yk}_${m}`) as string)?.trim() || ''
@@ -127,8 +127,25 @@ export async function updateSheetConfigAction(formData: FormData) {
 }
 
 export async function updateIbadahHarianConfigAction(formData: FormData) {
-    const sheetName = (formData.get('ibadahHarianSheet') as string)?.trim() || ''
-    const dataRange = (formData.get('ibadahHarianRange') as string)?.trim() || ''
+    const MONTHS = ['juli', 'agustus', 'september', 'oktober', 'november', 'desember', 'januari', 'februari', 'maret', 'april', 'mei', 'juni']
+
+    const harianConfig: Record<string, unknown> = {}
+
+    for (let year = 1; year <= 4; year++) {
+        const yk = `tahun_${year}`
+        const sheetName = `Tahun ke-${year}`
+
+        const months: Record<string, string> = {}
+        MONTHS.forEach(m => {
+            const val = (formData.get(`harian_${yk}_${m}`) as string)?.trim() || ''
+            months[m] = val
+        })
+
+        harianConfig[yk] = {
+            sheet_name: sheetName,
+            months: months,
+        }
+    }
 
     // Merge: preserve existing bulanan config
     const supabase = await createClient()
@@ -147,10 +164,7 @@ export async function updateIbadahHarianConfigAction(formData: FormData) {
     return mergeSheetConfig({
         ibadah: {
             bulanan: existingBulanan,
-            harian: {
-                sheet_name: sheetName,
-                data_range: dataRange,
-            },
+            harian: harianConfig,
         }
     })
 }

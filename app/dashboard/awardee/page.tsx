@@ -1,8 +1,8 @@
 import { createClient } from '@/src/utils/supabase/server'
 import { redirect } from 'next/navigation'
-import { getBatchCellValues, getIbadahMonthlyAverage, getSheetData } from '@/src/lib/googleSheets'
+import { getBatchCellValues, getIbadahRerataPerActivity, getSheetData } from '@/src/lib/googleSheets'
 import type { IbadahActivity } from '@/src/lib/googleSheets'
-import { getFullTimeline } from '@/src/lib/ibadahDefaults'
+import { getFullTimeline, getCategoryCellRefs } from '@/src/lib/ibadahDefaults'
 import AwardeeDashboardClient from '@/src/components/AwardeeDashboardClient'
 import type { IbadahComparisonItem, IbadahTrendItem, IpIpkItem, AchievementItem } from '@/src/components/AwardeeDashboardClient'
 
@@ -63,23 +63,79 @@ export default async function AwardeeDashboard() {
         const now = new Date()
         const curMonth = now.getMonth() + 1
         const curYear = now.getFullYear()
+        const prevMonth = curMonth === 1 ? 12 : curMonth - 1
+        const prevYear = curMonth === 1 ? curYear - 1 : curYear
+
+        // ─── Helper: Resolve academic year (tahunKe) from calendar month/year ──
+        function resolveAcademicYear(calMonth: number, calYear: number): number {
+            const baseYear = calMonth >= 7 ? calYear : calYear - 1
+            return Math.max(1, Math.min(4, baseYear - angkatan + 1))
+        }
+
+        const MONTH_IDS = [
+            'januari', 'februari', 'maret', 'april', 'mei', 'juni',
+            'juli', 'agustus', 'september', 'oktober', 'november', 'desember'
+        ]
+
+        // ─── Helper: Resolve Rerata cell from config or defaults ──
+        function resolveRerataCell(tahunKe: number, monthId: string): string {
+            const yearConfig = bulananConfig?.[`tahun_${tahunKe}`] || {}
+            const savedRef = yearConfig.months?.[monthId]
+            if (savedRef && savedRef.trim()) {
+                const cellOnly = savedRef.includes('!') ? savedRef.split('!')[1] : savedRef
+                return cellOnly
+            }
+            // Fallback to global defaults
+            const { getCellRef } = require('@/src/lib/ibadahDefaults')
+            return getCellRef(tahunKe, monthId)
+        }
+
+        console.log('[AwardeeDashboard] Config:', {
+            spreadsheetId: spreadsheetId.slice(0, 8) + '...',
+            angkatan,
+            hasBulananConfig: !!Object.keys(bulananConfig).length,
+            curMonth, curYear,
+        })
 
         // ─── 1. Ibadah Comparison (current vs previous month) ────────
         try {
-            const dailySheetToUse = harianConfig?.sheet_name || config.ibadah_sheet || 'LaporanIbadah'
+            const curTahunKe = resolveAcademicYear(curMonth, curYear)
+            const prevTahunKe = resolveAcademicYear(prevMonth, prevYear)
+            const curMonthId = MONTH_IDS[curMonth - 1]
+            const prevMonthId = MONTH_IDS[prevMonth - 1]
+
+            const curRerataCell = resolveRerataCell(curTahunKe, curMonthId)
+            const prevRerataCell = resolveRerataCell(prevTahunKe, prevMonthId)
+
+            console.log('[AwardeeDashboard] Comparison cell refs:', {
+                current: { tahunKe: curTahunKe, monthId: curMonthId, cell: curRerataCell },
+                previous: { tahunKe: prevTahunKe, monthId: prevMonthId, cell: prevRerataCell },
+            })
+
+            const curCategoryCells = curRerataCell ? getCategoryCellRefs(curRerataCell) : {}
+            const prevCategoryCells = prevRerataCell ? getCategoryCellRefs(prevRerataCell) : {}
+
+            console.log('[AwardeeDashboard] Category cells current:', curCategoryCells)
+            console.log('[AwardeeDashboard] Category cells previous:', prevCategoryCells)
+
             const [currentAvg, prevAvg] = await Promise.all([
-                getIbadahMonthlyAverage(spreadsheetId, dailySheetToUse, curMonth, curYear),
-                getIbadahMonthlyAverage(spreadsheetId, dailySheetToUse,
-                    curMonth === 1 ? 12 : curMonth - 1,
-                    curMonth === 1 ? curYear - 1 : curYear
-                ),
+                Object.keys(curCategoryCells).length > 0
+                    ? getIbadahRerataPerActivity(spreadsheetId, `Tahun ke-${curTahunKe}`, curCategoryCells)
+                    : Promise.resolve({} as Record<string, number>),
+                Object.keys(prevCategoryCells).length > 0
+                    ? getIbadahRerataPerActivity(spreadsheetId, `Tahun ke-${prevTahunKe}`, prevCategoryCells)
+                    : Promise.resolve({} as Record<string, number>),
             ])
+
+            console.log('[AwardeeDashboard] Comparison data current:', currentAvg)
+            console.log('[AwardeeDashboard] Comparison data previous:', prevAvg)
+
             ibadahComparison = ACTIVITY_ORDER.map(a => ({
                 aktivitas: ACTIVITY_SHORT[a] || a,
                 current: currentAvg[a] ?? 0,
                 previous: prevAvg[a] ?? 0,
             }))
-        } catch (e) { console.error('Ibadah comparison fetch error:', e) }
+        } catch (e) { console.error('[AwardeeDashboard] Ibadah comparison fetch error:', e) }
 
         // ─── 2. Ibadah Trend — Fetch ALL 48 months across 4 years ────
         try {

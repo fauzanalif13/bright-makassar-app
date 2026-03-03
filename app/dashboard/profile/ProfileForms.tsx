@@ -13,7 +13,7 @@ import {
     Camera, Loader2, Save, KeyRound, User, Link2, BookOpen, GraduationCap,
     Eye, EyeOff, HeartHandshake, ScrollText, Settings2, ChevronDown, CalendarDays
 } from 'lucide-react'
-import { ACADEMIC_MONTHS, getFullCellRef } from '@/src/lib/ibadahDefaults'
+import { ACADEMIC_MONTHS, getFullCellRef, getDailyBlockDefault } from '@/src/lib/ibadahDefaults'
 
 type ProfileData = {
     name: string
@@ -42,6 +42,10 @@ export default function ProfileForms({ initialData }: { initialData: ProfileData
     const [showPw1, setShowPw1] = useState(false)
     const [showPw2, setShowPw2] = useState(false)
     const [expandedYear, setExpandedYear] = useState<string | null>('tahun_1')
+
+    // Ibadah sub-tab state
+    const [ibadahSubTab, setIbadahSubTab] = useState<'bulanan' | 'harian'>('bulanan')
+    const [expandedDailyYear, setExpandedDailyYear] = useState<string | null>('tahun_1')
 
     // Loading states
     const [savingDetails, setSavingDetails] = useState(false)
@@ -166,94 +170,153 @@ export default function ProfileForms({ initialData }: { initialData: ProfileData
 
             {/* ─── Tab: Ibadah ────────────────────────────────────────────── */}
             {activeTab === 'ibadah' && (
-                <div className="space-y-6">
-                    {/* ─── Sub-section 1: Konfigurasi Ibadah Bulanan ─────────── */}
-                    <Card icon={<BookOpen className="w-4 h-4 text-[#00529C]" />} title="Konfigurasi Ibadah Bulanan">
-                        <p className="text-xs text-gray-500 mb-5 leading-relaxed">
-                            Pemetaan sel rerata skor ibadah per bulan untuk grafik tren historis. Nilai default telah terisi otomatis.
-                        </p>
-                        <form onSubmit={(e) => handleForm(updateSheetConfigAction, setSavingIbadah, e)} className="space-y-4">
-                            {[1, 2, 3, 4].map(year => {
-                                const yk = `tahun_${year}`
-                                const isExp = expandedYear === yk
-                                const savedY = (initialData.sheet_config as any)?.ibadah?.bulanan?.[yk]
-                                    || (initialData.sheet_config as any)?.ibadah?.[yk]
-                                    || {}
-                                
-                                return (
-                                    <div key={year} className="border border-gray-200 rounded-xl overflow-hidden bg-white">
-                                        <button 
-                                            type="button" 
-                                            onClick={() => setExpandedYear(isExp ? null : yk)}
-                                            className="w-full flex items-center justify-between p-4 bg-gray-50/50 hover:bg-gray-50 transition-colors"
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-7 h-7 rounded-lg bg-[#00529C]/10 text-[#00529C] flex items-center justify-center font-bold text-xs">{year}</div>
-                                                <span className="font-bold text-sm text-gray-800">Tahun ke-{year}</span>
-                                            </div>
-                                            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isExp ? 'rotate-180' : ''}`} />
-                                        </button>
-                                        
-                                        {isExp && (
-                                            <div className="p-4 md:p-5 border-t border-gray-100 space-y-5 animate-in slide-in-from-top-2 duration-200">
-                                                <div>
-                                                    <p className="text-[11px] text-gray-500 mb-3 leading-relaxed">
-                                                        Pemetaan Sel Skor Ibadah (Rerata). Otomatis menggunakan awalan <code className="text-gray-700 font-semibold">'Tahun ke-{year}'!</code>
-                                                    </p>
-                                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                                                        {ACADEMIC_MONTHS.map(m => {
-                                                            const defaultVal = getFullCellRef(year, m.id)
-                                                            const value = savedY.months?.[m.id] !== undefined ? savedY.months[m.id] : defaultVal
-                                                            return (
-                                                                <Input 
-                                                                    key={m.id}
-                                                                    id={`ibadah_${yk}_${m.id}`}
-                                                                    name={`ibadah_${yk}_${m.id}`}
-                                                                    label={m.label}
-                                                                    defaultValue={value}
-                                                                    placeholder={defaultVal || 'Kosong (tidak aktif)'}
-                                                                />
-                                                            )
-                                                        })}
+                <div className="space-y-5">
+                    {/* ─── Horizontal Sub-Tabs ─────────────────────────────── */}
+                    <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+                        <button
+                            onClick={() => setIbadahSubTab('bulanan')}
+                            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${ibadahSubTab === 'bulanan' ? 'bg-white text-[#00529C] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                            <BookOpen className="w-3.5 h-3.5" />
+                            Konfigurasi Ibadah Bulanan
+                        </button>
+                        <button
+                            onClick={() => setIbadahSubTab('harian')}
+                            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${ibadahSubTab === 'harian' ? 'bg-white text-[#00529C] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                            <CalendarDays className="w-3.5 h-3.5" />
+                            Konfigurasi Ibadah Harian
+                        </button>
+                    </div>
+
+                    {/* ─── Sub-Tab: Bulanan ─────────────────────────────────── */}
+                    {ibadahSubTab === 'bulanan' && (
+                        <Card icon={<BookOpen className="w-4 h-4 text-[#00529C]" />} title="Konfigurasi Ibadah Bulanan">
+                            <p className="text-xs text-gray-500 mb-5 leading-relaxed">
+                                Pemetaan sel rerata skor ibadah per bulan untuk grafik tren historis. Nilai default telah terisi otomatis.
+                            </p>
+                            <form onSubmit={(e) => handleForm(updateSheetConfigAction, setSavingIbadah, e)} className="space-y-4">
+                                {[1, 2, 3, 4].map(year => {
+                                    const yk = `tahun_${year}`
+                                    const isExp = expandedYear === yk
+                                    const savedY = (initialData.sheet_config as any)?.ibadah?.bulanan?.[yk]
+                                        || (initialData.sheet_config as any)?.ibadah?.[yk]
+                                        || {}
+
+                                    return (
+                                        <div key={year} className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+                                            <button
+                                                type="button"
+                                                onClick={() => setExpandedYear(isExp ? null : yk)}
+                                                className="w-full flex items-center justify-between p-4 bg-gray-50/50 hover:bg-gray-50 transition-colors"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-7 h-7 rounded-lg bg-[#00529C]/10 text-[#00529C] flex items-center justify-center font-bold text-xs">{year}</div>
+                                                    <span className="font-bold text-sm text-gray-800">Tahun ke-{year}</span>
+                                                </div>
+                                                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isExp ? 'rotate-180' : ''}`} />
+                                            </button>
+
+                                            {isExp && (
+                                                <div className="p-4 md:p-5 border-t border-gray-100 space-y-5 animate-in slide-in-from-top-2 duration-200">
+                                                    <div>
+                                                        <p className="text-[11px] text-gray-500 mb-3 leading-relaxed">
+                                                            Pemetaan Sel Skor Ibadah (Rerata). Otomatis menggunakan awalan <code className="text-gray-700 font-semibold">&apos;Tahun ke-{year}&apos;!</code>
+                                                        </p>
+                                                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                                                            {ACADEMIC_MONTHS.map(m => {
+                                                                const defaultVal = getFullCellRef(year, m.id)
+                                                                const value = savedY.months?.[m.id] !== undefined ? savedY.months[m.id] : defaultVal
+                                                                return (
+                                                                    <Input
+                                                                        key={m.id}
+                                                                        id={`ibadah_${yk}_${m.id}`}
+                                                                        name={`ibadah_${yk}_${m.id}`}
+                                                                        label={m.label}
+                                                                        defaultValue={value}
+                                                                        placeholder={defaultVal || 'Kosong (tidak aktif)'}
+                                                                    />
+                                                                )
+                                                            })}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="pt-2 flex justify-end">
+                                                        <SubmitBtn loading={savingIbadah} label={`Simpan Bulanan (Tahun ${year})`} />
                                                     </div>
                                                 </div>
-                                                
-                                                <div className="pt-2 flex justify-end">
-                                                    <SubmitBtn loading={savingIbadah} label={`Simpan Bulanan (Tahun ${year})`} />
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )
-                            })}
-                        </form>
-                    </Card>
+                                            )}
+                                        </div>
+                                    )
+                                })}
+                            </form>
+                        </Card>
+                    )}
 
-                    {/* ─── Sub-section 2: Konfigurasi Ibadah Harian ──────────── */}
-                    <Card icon={<CalendarDays className="w-4 h-4 text-[#00529C]" />} title="Konfigurasi Ibadah Harian">
-                        <p className="text-xs text-gray-500 mb-5 leading-relaxed">
-                            Konfigurasi untuk input harian dan grafik perbandingan bulan ini vs bulan lalu.
-                        </p>
-                        <form onSubmit={(e) => handleForm(updateIbadahHarianConfigAction, setSavingIbadahHarian, e)} className="space-y-4 max-w-xl">
-                            <Input 
-                                id="ibadahHarianSheet" 
-                                name="ibadahHarianSheet" 
-                                label="Nama Sheet Laporan Harian" 
-                                defaultValue={((initialData.sheet_config as any)?.ibadah?.harian?.sheet_name) || ''}
-                                placeholder="LaporanIbadah" 
-                            />
-                            <Input 
-                                id="ibadahHarianRange" 
-                                name="ibadahHarianRange" 
-                                label="Range Data Harian (Kolom A sampai I)" 
-                                defaultValue={((initialData.sheet_config as any)?.ibadah?.harian?.data_range) || ''}
-                                placeholder="LaporanIbadah!A:I" 
-                            />
-                            <div className="pt-2">
-                                <SubmitBtn loading={savingIbadahHarian} label="Simpan Konfigurasi Harian" />
-                            </div>
-                        </form>
-                    </Card>
+                    {/* ─── Sub-Tab: Harian ──────────────────────────────────── */}
+                    {ibadahSubTab === 'harian' && (
+                        <Card icon={<CalendarDays className="w-4 h-4 text-[#00529C]" />} title="Konfigurasi Ibadah Harian">
+                            <p className="text-xs text-gray-500 mb-5 leading-relaxed">
+                                Range blok grid harian (8 aktivitas × 31 hari) per bulan. Default dihitung otomatis dari sel Rerata bulanan.
+                                <br />
+                                <span className="text-gray-400">Contoh: <code className="bg-gray-50 px-1 rounded text-[10px] font-semibold">G13:AK20</code> untuk bulan dengan Rerata di <code className="bg-gray-50 px-1 rounded text-[10px] font-semibold">AM13</code></span>
+                            </p>
+                            <form onSubmit={(e) => handleForm(updateIbadahHarianConfigAction, setSavingIbadahHarian, e)} className="space-y-4">
+                                {[1, 2, 3, 4].map(year => {
+                                    const yk = `tahun_${year}`
+                                    const isExp = expandedDailyYear === yk
+                                    const savedHarian = (initialData.sheet_config as any)?.ibadah?.harian?.[yk] || {}
+
+                                    return (
+                                        <div key={year} className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+                                            <button
+                                                type="button"
+                                                onClick={() => setExpandedDailyYear(isExp ? null : yk)}
+                                                className="w-full flex items-center justify-between p-4 bg-gray-50/50 hover:bg-gray-50 transition-colors"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold text-xs">{year}</div>
+                                                    <span className="font-bold text-sm text-gray-800">Tahun ke-{year}</span>
+                                                </div>
+                                                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isExp ? 'rotate-180' : ''}`} />
+                                            </button>
+
+                                            {isExp && (
+                                                <div className="p-4 md:p-5 border-t border-gray-100 space-y-5 animate-in slide-in-from-top-2 duration-200">
+                                                    <div>
+                                                        <p className="text-[11px] text-gray-500 mb-3 leading-relaxed">
+                                                            Block range harian untuk sheet <code className="text-gray-700 font-semibold">&apos;Tahun ke-{year}&apos;</code>. Format: <code className="text-gray-700 font-semibold">G13:AK20</code>
+                                                        </p>
+                                                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                                                            {ACADEMIC_MONTHS.map(m => {
+                                                                const smartDefault = getDailyBlockDefault(year, m.id)
+                                                                const savedValue = savedHarian.months?.[m.id]
+                                                                const value = savedValue !== undefined ? savedValue : smartDefault
+                                                                return (
+                                                                    <Input
+                                                                        key={m.id}
+                                                                        id={`harian_${yk}_${m.id}`}
+                                                                        name={`harian_${yk}_${m.id}`}
+                                                                        label={m.label}
+                                                                        defaultValue={value}
+                                                                        placeholder={smartDefault || 'Kosong (tidak aktif)'}
+                                                                    />
+                                                                )
+                                                            })}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="pt-2 flex justify-end">
+                                                        <SubmitBtn loading={savingIbadahHarian} label={`Simpan Harian (Tahun ${year})`} />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )
+                                })}
+                            </form>
+                        </Card>
+                    )}
                 </div>
             )}
 

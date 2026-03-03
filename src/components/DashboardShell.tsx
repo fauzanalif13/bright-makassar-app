@@ -151,8 +151,9 @@ export default function DashboardShell({
                         <button onClick={() => setIsMobileMenuOpen(true)} className="text-gray-600 hover:text-[#00529C] mr-4 transition-colors">
                             <Menu className="w-6 h-6" />
                         </button>
-                        <div className="w-8 h-8 bg-gradient-to-br from-[#00529C] to-[#15A4FA] rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-sm">
-                            B
+                        <div className="flex items-center align-middle space-x-4">
+                            <img src="/logo-ybm.png" alt="Logo" width={50} height={50} />
+                            <img src="/logo-bright.png" alt="Logo" width={50} height={50} />
                         </div>
                     </div>
                     <Link href="/dashboard/profile" className="text-gray-600">

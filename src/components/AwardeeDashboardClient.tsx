@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { enrichTrendData, getCurrentAcademicYear } from '@/src/lib/chartHelpers'
 import type { EnrichedTrendItem } from '@/src/lib/chartHelpers'
+import IbadahComparisonChart from '@/src/components/charts/IbadahComparisonChart'
 
 // ─── Announcements ──────────────────────────────────────────────────
 
@@ -169,7 +170,7 @@ export default function AwardeeDashboardClient({
             />
 
             {/* ─── Grafik Ibadah ──────────────────────────────────────── */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 lg:p-5">
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
                     <div className="flex items-center gap-2.5">
                         <div className="w-9 h-9 rounded-lg bg-[#00529C]/10 text-[#00529C] flex items-center justify-center">
@@ -198,28 +199,12 @@ export default function AwardeeDashboardClient({
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Comparison Chart */}
-                    <div className="border border-gray-100 rounded-xl p-4">
-                        <h3 className="text-sm font-semibold text-gray-800 mb-4">
-                            Perbandingan: Bulan Ini vs Bulan Lalu
-                        </h3>
-                        {hasIbadahData ? (
-                            <div className="h-80">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={ibadahComparison} margin={{ top: 10, right: 5, left: -20, bottom: 30 }}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                                        <XAxis dataKey="aktivitas" axisLine={false} tickLine={false} tick={{ fill: '#1F2937', fontSize: 9 }} angle={-30} dy={15} textAnchor="end" />
-                                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#374151', fontSize: 11 }} domain={[0, 100]} />
-                                        <Tooltip contentStyle={{ borderRadius: '10px', border: 'none', boxShadow: '0 4px 12px rgb(0 0 0 / 0.1)', fontSize: '12px', padding: '10px' }} />
-                                        <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '16px', color: '#1F2937' }} />
-                                        <Bar dataKey="current" name="Bulan Ini" fill="#00529C" radius={[4, 4, 0, 0]} maxBarSize={24} />
-                                        <Bar dataKey="previous" name="Bulan Lalu" fill="#15A4FA" radius={[4, 4, 0, 0]} maxBarSize={24} opacity={0.6} />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-                        ) : <EmptyChart msg="Belum ada data ibadah." />}
-                    </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
+                    {/* Comparison Chart — Upgraded with Harian/Bulanan modes */}
+                    <IbadahComparisonChart
+                        angkatan={angkatan}
+                        initialComparison={ibadahComparison}
+                    />
 
                     {/* Scrollable Trend Timeline with Trendline */}
                     <div className="border border-gray-100 rounded-xl p-4">
