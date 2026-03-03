@@ -14,10 +14,9 @@ export default async function DashboardLayout({
         redirect('/login')
     }
 
-    // Fetch user details including name and role
     const { data: userData } = await supabase
         .from('roles_pengguna')
-        .select('name, role')
+        .select('name, role, batch, gender')
         .eq('email', user.email)
         .single()
 
@@ -26,11 +25,18 @@ export default async function DashboardLayout({
     const userMetadata = user.user_metadata || {}
     const avatarUrl = userMetadata.avatar_url || null
 
+    // Build subtitle: "Awardee / BS 8 / Putra"
+    const subtitleParts: string[] = [roleName.charAt(0).toUpperCase() + roleName.slice(1)]
+    if (userData?.batch) subtitleParts.push(`BS ${userData.batch}`)
+    if (userData?.gender) subtitleParts.push(userData.gender)
+    const subtitle = subtitleParts.join(' / ')
+
     return (
         <DashboardShell
             roleName={roleName}
             displayName={displayName}
             avatarUrl={avatarUrl}
+            subtitle={subtitle}
         >
             {children}
         </DashboardShell>

@@ -58,6 +58,36 @@ export async function getSheetData(
     return (response.data.values as string[][]) || [];
 }
 
+/**
+ * Read specific individual cells from a Google Sheet using batchGet.
+ * Return an array of string values matching the order of the requested ranges.
+ */
+export async function getBatchCellValues(
+    spreadsheetId: string,
+    ranges: string[]
+): Promise<string[]> {
+    if (!ranges.length) return []
+    const auth = getAuthClient();
+    const sheets = google.sheets({ version: 'v4', auth });
+
+    try {
+        const response = await sheets.spreadsheets.values.batchGet({
+            spreadsheetId,
+            ranges,
+        });
+
+        const valueRanges = response.data.valueRanges || []
+        return valueRanges.map(vr => {
+            const val = vr.values?.[0]?.[0]
+            return val !== undefined ? String(val) : ''
+        })
+    } catch (e: any) {
+        console.error('getBatchCellValues error (ensure sheets exist!):', e.message)
+        // If a sheet doesn't exist, the whole batchGet fails. Return empty array to default to 0.
+        return new Array(ranges.length).fill('')
+    }
+}
+
 // ─── Types ───────────────────────────────────────────────────────────
 
 export type IbadahActivity =
@@ -93,12 +123,18 @@ export type IbadahDailyRow = {
  * Helper: convert sheet cell to number.
  * "Ya" / "TRUE" / "1" → 1; numeric strings → parsed float; else → 0.
  */
-function cellToNumber(val: string | undefined): number {
-    if (!val) return 0;
-    const v = val.trim().toLowerCase();
+function cellToNumber(val: any): number { // Ubah tipe parameter menjadi any
+    if (val === undefined || val === null || val === '') return 0;
+    
+    // Jika data sudah berupa angka murni dari API
+    if (typeof val === 'number') return val; 
+
+    const v = String(val).trim().toLowerCase();
     if (v === 'ya' || v === 'true') return 1;
     if (v === 'tidak' || v === 'false') return 0;
-    const n = parseFloat(v);
+    
+    // Ganti koma dengan titik agar terbaca sebagai desimal yang valid
+    const n = parseFloat(v.replace(',', '.'));
     return isNaN(n) ? 0 : n;
 }
 
@@ -237,7 +273,6 @@ export async function getIbadahDailyData(
 
 /**
  * Read arbitrary cells from a spreadsheet range.
- * Used for reading the "Rerata" column from sheet_config.
  * Returns an array of {name, value} entries.
  */
 export async function getIbadahRerataFromCells(
@@ -253,4 +288,59 @@ export async function getIbadahRerataFromCells(
     } catch {
         return [];
     }
+}
+
+/**
+ * Find a row by date value in column A.
+ * Returns { rowIndex (1-based), data } or null if not found.
+ */
+export async function findRowByDate(
+    spreadsheetId: string,
+    sheetName: string,
+    targetDate: string // YYYY-MM-DD format
+): Promise<{ rowIndex: number; data: string[] } | null> {
+    const range = `${sheetName}!A:I`;
+    let rows: string[][];
+    try {
+        rows = await getSheetData(spreadsheetId, range);
+    } catch {
+        return null;
+    }
+
+    for (let i = 1; i < rows.length; i++) {
+        if (!rows[i][0]) continue;
+        try {
+            const cellDate = new Date(rows[i][0]);
+            const target = new Date(targetDate);
+            if (
+                cellDate.getFullYear() === target.getFullYear() &&
+                cellDate.getMonth() === target.getMonth() &&
+                cellDate.getDate() === target.getDate()
+            ) {
+                return { rowIndex: i + 1, data: rows[i] }; // +1 for 1-based Sheet row
+            }
+        } catch {
+            continue;
+        }
+    }
+    return null;
+}
+
+/**
+ * Update a specific row in a Google Sheet (in-place update).
+ */
+export async function updateSheetRow(
+    spreadsheetId: string,
+    range: string,
+    values: (string | number | boolean)[][]
+): Promise<void> {
+    const auth = getAuthClient();
+    const sheets = google.sheets({ version: 'v4', auth });
+
+    await sheets.spreadsheets.values.update({
+        spreadsheetId,
+        range,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: { values },
+    });
 }

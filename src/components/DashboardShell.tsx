@@ -12,6 +12,7 @@ type DashboardShellProps = {
     roleName: string;
     displayName: string;
     avatarUrl: string | null;
+    subtitle?: string;
 }
 
 export default function DashboardShell({
@@ -19,6 +20,7 @@ export default function DashboardShell({
     roleName,
     displayName,
     avatarUrl,
+    subtitle,
 }: DashboardShellProps) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
     const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({})
@@ -96,7 +98,6 @@ export default function DashboardShell({
                             <img src="/logo-ybm.png" alt="Logo" width={100} height={100} />
                             <img src="/logo-bright.png" alt="Logo" width={100} height={100} />
                         </div>
-                        <h1 className="font-bold text-[#00529C] tracking-tight leading-tight">Bright Scholarship<br /><span className="text-[#15A4FA] text-sm">RO Makassar</span></h1>
                     </div>
                     <button className="md:hidden text-gray-500 hover:text-gray-700" onClick={() => setIsMobileMenuOpen(false)}>
                         <X className="w-6 h-6" />
@@ -118,6 +119,9 @@ export default function DashboardShell({
                     <span className="mt-2 px-4 py-1.5 bg-[#15A4FA]/10 text-[#00529C] text-xs font-bold rounded-full uppercase tracking-wider">
                         {roleName}
                     </span>
+                    {subtitle && (
+                        <p className="mt-1.5 text-[11px] text-gray-500 font-medium">{subtitle}</p>
+                    )}
                 </div>
 
                 {/* Navigation Links */}

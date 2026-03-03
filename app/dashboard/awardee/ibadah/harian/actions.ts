@@ -2,31 +2,74 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/src/utils/supabase/server'
-import { appendDataToSheet } from '@/src/lib/googleSheets'
+import { appendDataToSheet, findRowByDate, updateSheetRow } from '@/src/lib/googleSheets'
 
-export async function submitIbadahHarian(formData: FormData) {
+/**
+ * Fetch existing ibadah data for a specific date.
+ * Returns the row data if found, null if not.
+ */
+export async function getIbadahForDate(dateStr: string) {
     try {
-        // 1. Authenticate user
         const supabase = await createClient()
         const { data: { user }, error: authError } = await supabase.auth.getUser()
+        if (authError || !user) return { error: 'Sesi kedaluwarsa.' }
 
-        if (authError || !user) {
-            return { error: 'Sesi Anda telah kedaluwarsa. Silakan login kembali.' }
+        const { data: userData } = await supabase
+            .from('roles_pengguna')
+            .select('spreadsheet_id, sheet_config')
+            .eq('email', user.email)
+            .single()
+
+        if (!userData?.spreadsheet_id) return { error: 'Spreadsheet belum dikonfigurasi.' }
+
+        const sheetConfig = userData.sheet_config as { ibadah_sheet?: string } | null
+        const sheetName = sheetConfig?.ibadah_sheet || 'LaporanIbadah'
+
+        const result = await findRowByDate(userData.spreadsheet_id, sheetName, dateStr)
+
+        if (!result) return { data: null } // No entry for this date
+
+        const [, shalatBerjamaah, qiyamulLail, dzikirPagi, mendoakan, shalatDhuha, membacaQuran, shaumSunnah, berinfak] = result.data
+
+        return {
+            data: {
+                shalatBerjamaah: shalatBerjamaah || '0',
+                qiyamulLail: qiyamulLail || '0',
+                dzikirPagi: dzikirPagi?.toLowerCase() === 'ya' || dzikirPagi === '1',
+                mendoakan: mendoakan?.toLowerCase() === 'ya' || mendoakan === '1',
+                shalatDhuha: shalatDhuha?.toLowerCase() === 'ya' || shalatDhuha === '1',
+                membacaQuran: membacaQuran?.toLowerCase() === 'ya' || membacaQuran === '1',
+                shaumSunnah: shaumSunnah?.toLowerCase() === 'ya' || shaumSunnah === '1',
+                berinfak: berinfak?.toLowerCase() === 'ya' || berinfak === '1',
+            },
+            rowIndex: result.rowIndex,
         }
+    } catch (err) {
+        console.error('getIbadahForDate error:', err)
+        return { error: 'Gagal mengambil data.' }
+    }
+}
 
-        // 2. Get user's spreadsheet_id and sheet_config from roles_pengguna
-        const { data: userData, error: dbError } = await supabase
+/**
+ * Upsert ibadah data: update existing row or append new.
+ */
+export async function upsertIbadahHarian(formData: FormData) {
+    try {
+        const supabase = await createClient()
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
+        if (authError || !user) return { error: 'Sesi kedaluwarsa. Login kembali.' }
+
+        const { data: userData } = await supabase
             .from('roles_pengguna')
             .select('spreadsheet_id, sheet_config, name')
             .eq('email', user.email)
             .single()
 
-        if (dbError || !userData?.spreadsheet_id) {
-            return { error: 'Spreadsheet belum dikonfigurasi. Buka Profil → Konfigurasi Spreadsheet.' }
-        }
+        if (!userData?.spreadsheet_id) return { error: 'Spreadsheet belum dikonfigurasi.' }
 
-        // 3. Extract form data (8 activities)
         const tanggal = formData.get('tanggal') as string
+        if (!tanggal) return { error: 'Tanggal wajib diisi.' }
+
         const shalatBerjamaah = formData.get('shalatBerjamaah') as string || '0'
         const qiyamulLail = formData.get('qiyamulLail') as string || '0'
         const dzikirPagi = formData.get('dzikirPagi') === 'on' ? 'Ya' : 'Tidak'
@@ -36,40 +79,32 @@ export async function submitIbadahHarian(formData: FormData) {
         const shaumSunnah = formData.get('shaumSunnah') === 'on' ? 'Ya' : 'Tidak'
         const berinfak = formData.get('berinfak') === 'on' ? 'Ya' : 'Tidak'
 
-        if (!tanggal) {
-            return { error: 'Tanggal wajib diisi.' }
-        }
-
-        // 4. Determine sheet name from config
         const sheetConfig = userData.sheet_config as { ibadah_sheet?: string } | null
         const sheetName = sheetConfig?.ibadah_sheet || 'LaporanIbadah'
 
-        // 5. Append to Google Sheets
-        const values = [[
-            tanggal,
-            shalatBerjamaah,
-            qiyamulLail,
-            dzikirPagi,
-            mendoakan,
-            shalatDhuha,
-            membacaQuran,
-            shaumSunnah,
-            berinfak,
-        ]]
+        // const rowValues = [[tanggal, shalatBerjamaah, qiyamulLail, dzikirPagi, mendoakan, shalatDhuha, membacaQuran, shaumSunnah, berinfak]]
+        const rowValues: (string | number | boolean)[][] = [
+    [tanggal, shalatBerjamaah, qiyamulLail, dzikirPagi, mendoakan, shalatDhuha, membacaQuran, shaumSunnah, berinfak]
+];
 
-        await appendDataToSheet(
-            userData.spreadsheet_id,
-            `${sheetName}!A:I`,
-            values
-        )
+        // Try to find existing row for this date
+        const existing = await findRowByDate(userData.spreadsheet_id, sheetName, tanggal)
 
-        // 6. Revalidate dashboard caches
+        if (existing) {
+            // UPDATE in-place
+            const updateRange = `${sheetName}!A${existing.rowIndex}:I${existing.rowIndex}`
+            await updateSheetRow(userData.spreadsheet_id, updateRange, rowValues)
+        } else {
+            // APPEND new row
+            await appendDataToSheet(userData.spreadsheet_id, `${sheetName}!A:I`, rowValues)
+        }
+
         revalidatePath('/dashboard/awardee')
         revalidatePath('/dashboard/fasilitator')
 
-        return { success: 'Laporan ibadah harian berhasil dikirim! 🎉' }
+        return { success: existing ? 'Data berhasil diperbarui! ✏️' : 'Laporan berhasil dikirim! 🎉' }
     } catch (err) {
-        console.error('submitIbadahHarian error:', err)
-        return { error: 'Terjadi kesalahan saat mengirim data. Coba lagi nanti.' }
+        console.error('upsertIbadahHarian error:', err)
+        return { error: 'Terjadi kesalahan. Coba lagi nanti.' }
     }
 }

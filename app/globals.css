@@ -24,3 +24,25 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* ─── Minimalist macOS-style Scrollbar ──────────────────────────── */
+.scrollbar-minimal::-webkit-scrollbar {
+  height: 5px;
+  width: 5px;
+}
+.scrollbar-minimal::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-minimal::-webkit-scrollbar-thumb {
+  background: #D1D5DB;
+  border-radius: 9999px;
+  transition: background 0.2s;
+}
+.scrollbar-minimal::-webkit-scrollbar-thumb:hover {
+  background: #9CA3AF;
+}
+/* Firefox */
+.scrollbar-minimal {
+  scrollbar-width: thin;
+  scrollbar-color: #D1D5DB transparent;
+}
