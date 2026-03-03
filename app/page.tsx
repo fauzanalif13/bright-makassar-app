@@ -16,16 +16,16 @@ export default function LandingPage() {
             {/* Navigation links & Login Button */}
             <div className="flex items-center space-x-6">
               <nav className="hidden md:flex space-x-8">
-                <Link href="#tentang" className="text-gray-600 hover:text-blue-600 font-medium transition-colors">
-                  Tentang Kami
+                <Link href="https://ybmbrilian.id/" className="text-gray-600 hover:text-blue-600 font-medium transition-colors">
+                  Tentang YBM BRILiaN
                 </Link>
               </nav>
-              <Link
+              {/* <Link
                 href="/login"
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-full font-semibold transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
               >
                 Masuk
-              </Link>
+              </Link> */}
             </div>
           </div>
         </div>
@@ -60,12 +60,12 @@ export default function LandingPage() {
                 >
                   Masuk
                 </Link>
-                <Link
+                {/* <Link
                   href="#pelajari"
                   className="w-full sm:w-auto px-8 py-4 bg-white border border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-blue-900 font-semibold rounded-full shadow-sm transition-all text-lg"
                 >
                   Pelajari Lebih Lanjut
-                </Link>
+                </Link> */}
               </div>
             </div>
           </div>

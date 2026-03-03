@@ -77,34 +77,34 @@ export default function LaporanIbadahHarianPage() {
                     <BookOpen className="w-5 h-5" />
                 </div>
                 <div>
-                    <h1 className="text-xl md:text-2xl font-black text-gray-900 tracking-tight">Laporan Ibadah Harian</h1>
-                    <p className="text-gray-500 text-xs">Catat dan edit ibadah harianmu</p>
+                    <h1 className="text-xl md:text-2xl font-black text-gray-900 dark:text-white tracking-tight">Laporan Ibadah Harian</h1>
+                    <p className="text-gray-500 dark:text-slate-400 text-xs">Catat dan edit ibadah harianmu</p>
                 </div>
             </div>
 
             {/* Form Card */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden">
                 {/* Date Picker Bar */}
-                <div className="px-6 py-4 bg-gray-50/80 border-b border-gray-100 flex flex-wrap items-center gap-4">
+                <div className="px-6 py-4 bg-gray-50/80 dark:bg-slate-700/50 border-b border-gray-100 dark:border-slate-700 flex flex-wrap items-center gap-4">
                     <div className="flex items-center gap-2">
                         <CalendarDays className="w-4 h-4 text-[#15A4FA]" />
-                        <label htmlFor="datePicker" className="text-xs font-bold text-gray-700">Pilih Tanggal:</label>
+                        <label htmlFor="datePicker" className="text-xs font-bold text-gray-700 dark:text-slate-200">Pilih Tanggal:</label>
                     </div>
                     <input
                         type="date"
                         id="datePicker"
                         value={selectedDate}
                         onChange={(e) => setSelectedDate(e.target.value)}
-                        className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-800 focus:ring-2 focus:ring-[#15A4FA]/40 focus:border-[#15A4FA] outline-none transition-all"
+                        className="px-3 py-2 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg text-sm font-medium text-gray-800 dark:text-slate-100 focus:ring-2 focus:ring-[#15A4FA]/40 focus:border-[#15A4FA] outline-none transition-all"
                     />
                     {isFetching && <Loader2 className="w-4 h-4 text-[#15A4FA] animate-spin" />}
                     {!isFetching && isEditing && (
-                        <span className="flex items-center gap-1.5 text-[11px] font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full">
+                        <span className="flex items-center gap-1.5 text-[11px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2.5 py-1 rounded-full">
                             <Edit3 className="w-3 h-3" />Mode Edit
                         </span>
                     )}
                     {!isFetching && !isEditing && (
-                        <span className="flex items-center gap-1.5 text-[11px] font-bold text-green-600 bg-green-50 px-2.5 py-1 rounded-full">
+                        <span className="flex items-center gap-1.5 text-[11px] font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2.5 py-1 rounded-full">
                             <PlusCircle className="w-3 h-3" />Entri Baru
                         </span>
                     )}
@@ -117,37 +117,37 @@ export default function LaporanIbadahHarianPage() {
                     {/* Shalat Berjama'ah */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div>
-                            <h3 className="text-xs font-bold text-gray-700 mb-2">🕌 Shalat Berjama&apos;ah 5 Waktu</h3>
-                            <p className="text-[11px] text-gray-500 mb-2">Berapa kali berjama&apos;ah hari ini? (0 - 5)</p>
+                            <h3 className="text-xs font-bold text-gray-700 dark:text-slate-200 mb-2">🕌 Shalat Berjama&apos;ah 5 Waktu</h3>
+                            <p className="text-[11px] text-gray-500 dark:text-slate-400 mb-2">Berapa kali berjama&apos;ah hari ini? (0 - 5)</p>
                             <div className="flex items-center gap-2">
                                 <input
                                     type="number" id="shalatBerjamaah" name="shalatBerjamaah" min="0" max="5"
                                     key={`shalat-${selectedDate}-${d?.shalatBerjamaah}`}
                                     defaultValue={d?.shalatBerjamaah || '0'}
-                                    className="w-20 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 font-bold text-center text-lg focus:ring-2 focus:ring-[#15A4FA]/40 focus:border-[#15A4FA] outline-none transition-all"
+                                    className="w-20 px-3 py-2.5 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl text-gray-800 dark:text-slate-100 font-bold text-center text-lg focus:ring-2 focus:ring-[#15A4FA]/40 focus:border-[#15A4FA] outline-none transition-all"
                                 />
-                                <span className="text-xs text-gray-400">/ 5 waktu</span>
+                                <span className="text-xs text-gray-400 dark:text-slate-500">/ 5 waktu</span>
                             </div>
                         </div>
 
                         <div>
-                            <h3 className="text-xs font-bold text-gray-700 mb-2">🌌 Qiyamul Lail</h3>
-                            <p className="text-[11px] text-gray-500 mb-2">Berapa kali shalat malam?</p>
+                            <h3 className="text-xs font-bold text-gray-700 dark:text-slate-200 mb-2">🌌 Qiyamul Lail</h3>
+                            <p className="text-[11px] text-gray-500 dark:text-slate-400 mb-2">Berapa kali shalat malam?</p>
                             <div className="flex items-center gap-2">
                                 <input
                                     type="number" id="qiyamulLail" name="qiyamulLail" min="0"
                                     key={`qiyamul-${selectedDate}-${d?.qiyamulLail}`}
                                     defaultValue={d?.qiyamulLail || '0'}
-                                    className="w-20 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 font-bold text-center text-lg focus:ring-2 focus:ring-[#15A4FA]/40 focus:border-[#15A4FA] outline-none transition-all"
+                                    className="w-20 px-3 py-2.5 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl text-gray-800 dark:text-slate-100 font-bold text-center text-lg focus:ring-2 focus:ring-[#15A4FA]/40 focus:border-[#15A4FA] outline-none transition-all"
                                 />
-                                <span className="text-xs text-gray-400">kali</span>
+                                <span className="text-xs text-gray-400 dark:text-slate-500">kali</span>
                             </div>
                         </div>
                     </div>
 
                     {/* Toggle Activities */}
                     <div>
-                        <h3 className="text-xs font-bold text-gray-700 mb-3">Aktivitas Ibadah Lainnya</h3>
+                        <h3 className="text-xs font-bold text-gray-700 dark:text-slate-200 mb-3">Aktivitas Ibadah Lainnya</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
                             {TOGGLE_ACTIVITIES.map((activity) => {
                                 const isChecked = d ? d[activity.name as keyof IbadahData] as boolean : false
@@ -155,14 +155,14 @@ export default function LaporanIbadahHarianPage() {
                                     <label
                                         key={`${activity.name}-${selectedDate}-${isChecked}`}
                                         htmlFor={activity.name}
-                                        className="group relative flex items-center gap-2.5 p-3.5 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:border-[#15A4FA]/50 hover:bg-blue-50/30 transition-all has-[:checked]:bg-[#00529C]/5 has-[:checked]:border-[#00529C] has-[:checked]:shadow-sm"
+                                        className="group relative flex items-center gap-2.5 p-3.5 bg-gray-50 dark:bg-slate-700/50 border border-gray-200 dark:border-slate-600 rounded-xl cursor-pointer hover:border-[#15A4FA]/50 hover:bg-blue-50/30 dark:hover:bg-slate-700 transition-all has-[:checked]:bg-[#00529C]/5 dark:has-[:checked]:bg-[#00529C]/20 has-[:checked]:border-[#00529C] dark:has-[:checked]:border-[#60b5ff] has-[:checked]:shadow-sm"
                                     >
                                         <input
                                             type="checkbox" id={activity.name} name={activity.name}
                                             defaultChecked={isChecked}
-                                            className="w-4.5 h-4.5 rounded border-2 border-gray-300 text-[#00529C] focus:ring-[#15A4FA] accent-[#00529C] cursor-pointer"
+                                            className="w-4.5 h-4.5 rounded border-2 border-gray-300 dark:border-slate-500 text-[#00529C] focus:ring-[#15A4FA] accent-[#00529C] cursor-pointer"
                                         />
-                                        <span className="text-xs font-semibold text-gray-700 group-has-[:checked]:text-[#00529C]">
+                                        <span className="text-xs font-semibold text-gray-700 dark:text-slate-200 group-has-[:checked]:text-[#00529C] dark:group-has-[:checked]:text-[#60b5ff]">
                                             {activity.emoji} {activity.label}
                                         </span>
                                     </label>
@@ -172,18 +172,18 @@ export default function LaporanIbadahHarianPage() {
                     </div>
 
                     {/* Submit */}
-                    <div className="pt-4 border-t border-gray-100 flex items-center gap-3">
+                    <div className="pt-4 border-t border-gray-100 dark:border-slate-700 flex items-center gap-3">
                         <button
                             type="submit" disabled={isSubmitting}
                             className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#00529C] to-[#15A4FA] text-white font-bold text-sm rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60 disabled:hover:scale-100"
                         >
                             {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" />Menyimpan...</> :
-                             submitted ? <><CheckCircle2 className="w-4 h-4" />Tersimpan!</> :
-                             isEditing ? <><Edit3 className="w-4 h-4" />Perbarui Data</> :
-                             <><Send className="w-4 h-4" />Kirim Laporan</>}
+                                submitted ? <><CheckCircle2 className="w-4 h-4" />Tersimpan!</> :
+                                    isEditing ? <><Edit3 className="w-4 h-4" />Perbarui Data</> :
+                                        <><Send className="w-4 h-4" />Kirim Laporan</>}
                         </button>
                         {isEditing && (
-                            <p className="text-[11px] text-amber-600 font-medium">Data untuk tanggal ini akan diperbarui</p>
+                            <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">Data untuk tanggal ini akan diperbarui</p>
                         )}
                     </div>
                 </form>

@@ -58,25 +58,23 @@ export default function FasilitatorDashboardClient({ displayName, aggregatedData
             </div>
 
             {/* Tab Switcher */}
-            <div className="flex gap-2 bg-gray-100 p-1.5 rounded-2xl w-fit">
+            <div className="flex gap-2 bg-gray-100 dark:bg-slate-800 p-1.5 rounded-2xl w-fit">
                 <button
                     onClick={() => setActiveTab('rekapan')}
-                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                        activeTab === 'rekapan'
-                            ? 'bg-white text-[#00529C] shadow-sm'
-                            : 'text-gray-500 hover:text-gray-700'
-                    }`}
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'rekapan'
+                            ? 'bg-white dark:bg-slate-700 text-[#00529C] dark:text-[#60b5ff] shadow-sm'
+                            : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
+                        }`}
                 >
                     <BarChart3 className="w-4 h-4" />
                     Rekapan
                 </button>
                 <button
                     onClick={() => setActiveTab('individu')}
-                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                        activeTab === 'individu'
-                            ? 'bg-white text-[#00529C] shadow-sm'
-                            : 'text-gray-500 hover:text-gray-700'
-                    }`}
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'individu'
+                            ? 'bg-white dark:bg-slate-700 text-[#00529C] dark:text-[#60b5ff] shadow-sm'
+                            : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
+                        }`}
                 >
                     <Eye className="w-4 h-4" />
                     Individu
@@ -86,43 +84,43 @@ export default function FasilitatorDashboardClient({ displayName, aggregatedData
             {/* ─── Rekapan Tab ───────────────────────────────────────────── */}
             {activeTab === 'rekapan' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2 bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
+                    <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700 p-8">
                         <div className="flex justify-between items-center mb-6">
                             <div>
-                                <h2 className="text-xl font-bold text-gray-900">Rerata Ibadah Awardee (Angkatan)</h2>
-                                <p className="text-sm text-gray-500">Rata-rata capaian ibadah seluruh awardee aktif bulan ini</p>
+                                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Rerata Ibadah Awardee (Angkatan)</h2>
+                                <p className="text-sm text-gray-500 dark:text-slate-400">Rata-rata capaian ibadah seluruh awardee aktif bulan ini</p>
                             </div>
                         </div>
                         <FasilitatorBarChart data={aggregatedData} />
                     </div>
 
                     {/* Awardee Summary */}
-                    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700 p-8">
                         <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#00529C] flex items-center justify-center">
+                            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-[#00529C]/20 text-[#00529C] dark:text-[#60b5ff] flex items-center justify-center">
                                 <Users className="w-5 h-5" />
                             </div>
                             <div>
-                                <h2 className="text-lg font-bold text-gray-900">Daftar Awardee</h2>
-                                <p className="text-xs text-gray-500">{awardees.length} awardee terdaftar</p>
+                                <h2 className="text-lg font-bold text-gray-900 dark:text-white">Daftar Awardee</h2>
+                                <p className="text-xs text-gray-500 dark:text-slate-400">{awardees.length} awardee terdaftar</p>
                             </div>
                         </div>
                         <div className="space-y-2 max-h-80 overflow-y-auto">
                             {awardees.map((a) => (
-                                <div key={a.name} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-blue-50/50 transition-colors">
-                                    <div className="w-8 h-8 rounded-full bg-[#00529C]/10 text-[#00529C] flex items-center justify-center text-xs font-bold shrink-0">
+                                <div key={a.name} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-slate-700/50 hover:bg-blue-50/50 dark:hover:bg-slate-700 transition-colors">
+                                    <div className="w-8 h-8 rounded-full bg-[#00529C]/10 dark:bg-[#00529C]/20 text-[#00529C] dark:text-[#60b5ff] flex items-center justify-center text-xs font-bold shrink-0">
                                         {a.name.charAt(0).toUpperCase()}
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="text-sm font-semibold text-gray-900 truncate">{a.name}</p>
-                                        <p className="text-[11px] text-gray-400">
+                                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{a.name}</p>
+                                        <p className="text-[11px] text-gray-400 dark:text-slate-500">
                                             {a.spreadsheet_id ? '✅ Spreadsheet terkonfigurasi' : '⚠️ Belum ada spreadsheet'}
                                         </p>
                                     </div>
                                 </div>
                             ))}
                             {awardees.length === 0 && (
-                                <p className="text-sm text-gray-400 text-center py-6">Belum ada awardee aktif</p>
+                                <p className="text-sm text-gray-400 dark:text-slate-500 text-center py-6">Belum ada awardee aktif</p>
                             )}
                         </div>
                     </div>
@@ -133,16 +131,16 @@ export default function FasilitatorDashboardClient({ displayName, aggregatedData
             {activeTab === 'individu' && (
                 <div className="space-y-6">
                     {/* Dropdown selector */}
-                    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
                         <div className="flex items-center gap-3 mb-4">
-                            <User className="w-5 h-5 text-[#00529C]" />
-                            <h2 className="text-lg font-bold text-gray-900">Pilih Awardee</h2>
+                            <User className="w-5 h-5 text-[#00529C] dark:text-[#60b5ff]" />
+                            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Pilih Awardee</h2>
                         </div>
                         <div className="relative max-w-md">
                             <select
                                 value={selectedAwardee}
                                 onChange={(e) => handleSelectAwardee(e.target.value)}
-                                className="w-full appearance-none px-4 py-3 pr-10 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 font-medium focus:outline-none focus:ring-2 focus:ring-[#15A4FA]/40 focus:border-[#15A4FA] transition-all cursor-pointer"
+                                className="w-full appearance-none px-4 py-3 pr-10 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl text-gray-800 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-[#15A4FA]/40 focus:border-[#15A4FA] transition-all cursor-pointer"
                             >
                                 <option value="">-- Pilih Awardee --</option>
                                 {awardees
@@ -152,16 +150,16 @@ export default function FasilitatorDashboardClient({ displayName, aggregatedData
                                     ))
                                 }
                             </select>
-                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-slate-500 pointer-events-none" />
                         </div>
                     </div>
 
                     {/* Loading state */}
                     {isPending && (
-                        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-12 flex items-center justify-center">
+                        <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700 p-12 flex items-center justify-center">
                             <div className="text-center space-y-3">
                                 <Loader2 className="w-8 h-8 text-[#15A4FA] animate-spin mx-auto" />
-                                <p className="text-sm text-gray-500 font-medium">Memuat data {selectedAwardee}...</p>
+                                <p className="text-sm text-gray-500 dark:text-slate-400 font-medium">Memuat data {selectedAwardee}...</p>
                             </div>
                         </div>
                     )}
@@ -169,22 +167,22 @@ export default function FasilitatorDashboardClient({ displayName, aggregatedData
                     {/* Individual charts */}
                     {!isPending && individualData && selectedAwardee && (
                         <div className="space-y-6">
-                            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
+                            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700 p-8">
                                 <div className="mb-6">
-                                    <h2 className="text-xl font-bold text-[#00529C]">Dashboard {selectedAwardee}</h2>
-                                    <p className="text-sm text-gray-500">Grafik ibadah individual bulan ini</p>
+                                    <h2 className="text-xl font-bold text-[#00529C] dark:text-[#60b5ff]">Dashboard {selectedAwardee}</h2>
+                                    <p className="text-sm text-gray-500 dark:text-slate-400">Grafik ibadah individual bulan ini</p>
                                 </div>
 
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                     {/* Daily Chart */}
                                     <div>
-                                        <h3 className="text-sm font-semibold text-gray-700 text-center mb-2">Tren Harian</h3>
+                                        <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-300 text-center mb-2">Tren Harian</h3>
                                         <AwardeeIbadahDailyChart data={individualData.daily as IbadahDailyChartData[]} />
                                     </div>
 
                                     {/* Monthly Chart */}
                                     <div>
-                                        <h3 className="text-sm font-semibold text-gray-700 text-center mb-2">Rerata Capaian (%)</h3>
+                                        <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-300 text-center mb-2">Rerata Capaian (%)</h3>
                                         <AwardeeIbadahMonthlyChart data={individualData.monthly as IbadahMonthlyChartData[]} />
                                     </div>
                                 </div>
@@ -194,10 +192,10 @@ export default function FasilitatorDashboardClient({ displayName, aggregatedData
 
                     {/* Empty state */}
                     {!isPending && !individualData && !selectedAwardee && (
-                        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-12 flex items-center justify-center">
+                        <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700 p-12 flex items-center justify-center">
                             <div className="text-center space-y-2">
-                                <Users className="w-10 h-10 text-gray-300 mx-auto" />
-                                <p className="text-gray-400 font-medium">Pilih awardee dari dropdown untuk melihat dashboard individu</p>
+                                <Users className="w-10 h-10 text-gray-300 dark:text-slate-600 mx-auto" />
+                                <p className="text-gray-400 dark:text-slate-400 font-medium">Pilih awardee dari dropdown untuk melihat dashboard individu</p>
                             </div>
                         </div>
                     )}

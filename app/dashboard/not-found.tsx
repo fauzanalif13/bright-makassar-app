@@ -9,9 +9,9 @@ export default function DashboardNotFound() {
         <div className="flex justify-center">
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-br from-[#15A4FA]/20 to-[#00529C]/20 rounded-full blur-2xl scale-150 animate-pulse" />
-            <div className="relative bg-gradient-to-br from-[#00529C]/10 to-[#15A4FA]/10 p-8 rounded-full border border-[#15A4FA]/20">
+            <div className="relative bg-gradient-to-br from-[#00529C]/10 to-[#15A4FA]/10 dark:from-[#00529C]/20 dark:to-[#15A4FA]/20 p-8 rounded-full border border-[#15A4FA]/20 dark:border-[#15A4FA]/30">
               <FileQuestion
-                className="w-16 h-16 text-[#00529C]"
+                className="w-16 h-16 text-[#00529C] dark:text-[#60b5ff]"
                 strokeWidth={1.5}
               />
             </div>
@@ -23,10 +23,10 @@ export default function DashboardNotFound() {
           <h1 className="text-8xl font-black bg-gradient-to-r from-[#00529C] to-[#15A4FA] bg-clip-text text-transparent tracking-tight">
             404
           </h1>
-          <h2 className="text-2xl font-bold text-gray-900 mt-4">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-4">
             Halaman Tidak Ditemukan
           </h2>
-          <p className="text-gray-500 mt-3 leading-relaxed">
+          <p className="text-gray-500 dark:text-slate-300 mt-3 leading-relaxed">
             Maaf, halaman yang Anda cari tidak tersedia atau sedang dalam tahap pengembangan.
           </p>
         </div>

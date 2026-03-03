@@ -27,8 +27,8 @@ export default async function ProfilePage() {
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-2xl font-black text-gray-900 tracking-tight">Pengaturan Profil</h1>
-                <p className="text-gray-500 text-sm mt-1">Kelola identitas, konfigurasi spreadsheet, dan kata sandi Anda.</p>
+                <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Pengaturan Profil</h1>
+                <p className="text-gray-500 dark:text-slate-300 text-sm mt-1">Kelola identitas, konfigurasi spreadsheet, dan kata sandi Anda.</p>
             </div>
             <ProfileForms initialData={initialData} />
         </div>

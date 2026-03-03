@@ -2,14 +2,10 @@ import {
     LayoutDashboard,
     GraduationCap,
     BookOpen,
-    Award,
     Users,
     Settings,
     HeartHandshake,
     Activity,
-    Megaphone,
-    Calendar,
-    ClipboardList
 } from 'lucide-react';
 
 export type MenuItem = {
@@ -26,8 +22,8 @@ export const menuConfig: Record<string, MenuItem[]> = {
             title: 'Capaian Pendidikan',
             icon: GraduationCap,
             submenu: [
-                { title: 'Perkuliahan', path: '/dashboard/awardee/pendidikan/perkuliahan' },
                 { title: 'Pembinaan S/H Skills', path: '/dashboard/awardee/pendidikan/pembinaan' },
+                { title: 'Perkuliahan', path: '/dashboard/awardee/pendidikan/perkuliahan' },
                 { title: 'Riwayat Prestasi', path: '/dashboard/awardee/pendidikan/prestasi' },
                 { title: 'Riwayat Organisasi', path: '/dashboard/awardee/pendidikan/organisasi' },
                 { title: 'Riwayat Workshop / Seminar', path: '/dashboard/awardee/pendidikan/workshop' },
@@ -66,7 +62,6 @@ export const menuConfig: Record<string, MenuItem[]> = {
                         { title: 'Tugas pembinaan', path: '/dashboard/fasilitator/pendidikan/bright/tugas' },
                     ],
                 },
-                { title: 'SMART Scholarship (coming soon)', path: '#' },
             ],
         },
         {
@@ -74,7 +69,6 @@ export const menuConfig: Record<string, MenuItem[]> = {
             icon: BookOpen,
             submenu: [
                 { title: 'BRIGHT Scholarship', path: '/dashboard/fasilitator/ibadah/bright' },
-                { title: 'SMART Scholarship (coming soon)', path: '#' },
             ],
         },
         { title: 'Profile & Pengaturan', path: '/dashboard/profile', icon: Settings },

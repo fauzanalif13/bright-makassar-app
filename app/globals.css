@@ -1,28 +1,97 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* ─── Backgrounds ─────────────────────────────────────── */
+  --bg-primary: #f9fafb;       /* gray-50 */
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f9fafb;
+  --bg-input: #f9fafb;
+  --bg-muted: #f3f4f6;         /* gray-100 */
+
+  /* ─── Text ────────────────────────────────────────────── */
+  --text-primary: #111827;      /* gray-900 */
+  --text-secondary: #374151;    /* gray-700 */
+  --text-muted: #6b7280;        /* gray-500 */
+  --text-faint: #9ca3af;        /* gray-400 */
+
+  /* ─── Borders ─────────────────────────────────────────── */
+  --border-color: #e5e7eb;      /* gray-200 */
+  --border-light: #f3f4f6;      /* gray-100 */
+
+  /* ─── Charts ──────────────────────────────────────────── */
+  --chart-grid: #e5e7eb;
+  --chart-tick: #6b7280;
+  --chart-tick-dark: #374151;
+  --chart-tick-bold: #1f2937;
+  --tooltip-bg: #ffffff;
+  --tooltip-border: #f3f4f6;
+  --tooltip-text: #111827;
+  --tooltip-text-secondary: #374151;
+  --chart-cursor: #f3f4f6;
+
+  /* ─── Scrollbar ───────────────────────────────────────── */
+  --scrollbar-thumb: #d1d5db;
+  --scrollbar-thumb-hover: #9ca3af;
+
+  /* ─── Misc ────────────────────────────────────────────── */
+  --overlay-bg: rgba(17, 24, 39, 0.5);
+  --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+.dark {
+  /* ─── Backgrounds ─────────────────────────────────────── */
+  --bg-primary: #0f172a;        /* slate-900 */
+  --bg-secondary: #1e293b;      /* slate-800 */
+  --bg-card: #1e293b;
+  --bg-card-hover: #334155;     /* slate-700 */
+  --bg-input: #334155;
+  --bg-muted: #334155;
+
+  /* ─── Text ────────────────────────────────────────────── */
+  --text-primary: #f1f5f9;      /* slate-100 */
+  --text-secondary: #cbd5e1;    /* slate-300 */
+  --text-muted: #94a3b8;        /* slate-400 */
+  --text-faint: #64748b;        /* slate-500 */
+
+  /* ─── Borders ─────────────────────────────────────────── */
+  --border-color: #334155;      /* slate-700 */
+  --border-light: #1e293b;      /* slate-800 */
+
+  /* ─── Charts ──────────────────────────────────────────── */
+  --chart-grid: #334155;
+  --chart-tick: #94a3b8;
+  --chart-tick-dark: #cbd5e1;
+  --chart-tick-bold: #e2e8f0;
+  --tooltip-bg: #1e293b;
+  --tooltip-border: #334155;
+  --tooltip-text: #f1f5f9;
+  --tooltip-text-secondary: #cbd5e1;
+  --chart-cursor: #334155;
+
+  /* ─── Scrollbar ───────────────────────────────────────── */
+  --scrollbar-thumb: #475569;
+  --scrollbar-thumb-hover: #64748b;
+
+  /* ─── Misc ────────────────────────────────────────────── */
+  --overlay-bg: rgba(0, 0, 0, 0.6);
+  --shadow-color: rgba(0, 0, 0, 0.4);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--bg-primary);
+  --color-foreground: var(--text-primary);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg-primary);
+  color: var(--text-primary);
   font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* ─── Minimalist macOS-style Scrollbar ──────────────────────────── */
@@ -34,15 +103,23 @@ body {
   background: transparent;
 }
 .scrollbar-minimal::-webkit-scrollbar-thumb {
-  background: #D1D5DB;
+  background: var(--scrollbar-thumb);
   border-radius: 9999px;
   transition: background 0.2s;
 }
 .scrollbar-minimal::-webkit-scrollbar-thumb:hover {
-  background: #9CA3AF;
+  background: var(--scrollbar-thumb-hover);
 }
 /* Firefox */
 .scrollbar-minimal {
   scrollbar-width: thin;
-  scrollbar-color: #D1D5DB transparent;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+/* ─── Smooth transitions for theme changes ──────────────────────── */
+.theme-transition,
+.theme-transition *,
+.theme-transition *::before,
+.theme-transition *::after {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.2s ease !important;
 }

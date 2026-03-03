@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import { menuConfig, MenuItem } from '@/src/lib/menuConfig'
 import { Menu, X, LogOut, ChevronDown, ChevronRight } from 'lucide-react'
 import { logoutAction } from '@/app/dashboard/actions'
+import { useTheme } from '@/src/components/ThemeProvider'
 
 type DashboardShellProps = {
     children: React.ReactNode;
@@ -25,6 +26,7 @@ export default function DashboardShell({
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
     const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({})
     const pathname = usePathname()
+    const { isDark } = useTheme()
 
     const toggleMenu = (title: string) => {
         setOpenMenus(prev => ({
@@ -47,25 +49,29 @@ export default function DashboardShell({
                 {hasSubmenu ? (
                     <button
                         onClick={() => toggleMenu(item.title)}
-                        className={`w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${isActive ? 'bg-blue-50 text-[#00529C]' : 'text-gray-700 hover:bg-gray-50'
+                        className={`w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${isActive
+                            ? 'bg-blue-50 text-[#00529C] dark:bg-[#00529C]/20 dark:text-[#60b5ff]'
+                            : 'text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-700/50'
                             }`}
                         style={{ paddingLeft: `${depth * 1 + 1}rem` }}
                     >
                         <div className="flex items-center">
-                            {Icon && <Icon className={`w-5 h-5 mr-3 ${isActive ? 'text-[#00529C]' : 'text-gray-400'}`} />}
+                            {Icon && <Icon className={`w-5 h-5 mr-3 ${isActive ? 'text-[#00529C] dark:text-[#60b5ff]' : 'text-gray-400 dark:text-slate-500'}`} />}
                             {item.title}
                         </div>
-                        {isOpen ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />}
+                        {isOpen ? <ChevronDown className="w-4 h-4 text-gray-400 dark:text-slate-500" /> : <ChevronRight className="w-4 h-4 text-gray-400 dark:text-slate-500" />}
                     </button>
                 ) : (
                     <Link
                         href={item.path || '#'}
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className={`flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${isActive ? 'bg-blue-50 text-[#00529C]' : 'text-gray-700 hover:bg-gray-50 hover:text-[#00529C]'
+                        className={`flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${isActive
+                            ? 'bg-blue-50 text-[#00529C] dark:bg-[#00529C]/20 dark:text-[#60b5ff]'
+                            : 'text-gray-700 hover:bg-gray-50 hover:text-[#00529C] dark:text-slate-300 dark:hover:bg-slate-700/50 dark:hover:text-[#60b5ff]'
                             }`}
                         style={{ paddingLeft: `${depth * 1 + 1}rem` }}
                     >
-                        {Icon && <Icon className={`w-5 h-5 mr-3 ${isActive ? 'text-[#00529C]' : 'text-gray-400'}`} />}
+                        {Icon && <Icon className={`w-5 h-5 mr-3 ${isActive ? 'text-[#00529C] dark:text-[#60b5ff]' : 'text-gray-400 dark:text-slate-500'}`} />}
                         {item.title}
                     </Link>
                 )}
@@ -80,47 +86,47 @@ export default function DashboardShell({
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex font-sans">
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex font-sans">
             {/* Mobile Sidebar Overlay */}
             {isMobileMenuOpen && (
                 <div
-                    className="fixed inset-0 z-40 bg-gray-900/50 backdrop-blur-sm md:hidden"
+                    className="fixed inset-0 z-40 bg-gray-900/50 dark:bg-black/60 backdrop-blur-sm md:hidden"
                     onClick={() => setIsMobileMenuOpen(false)}
                 />
             )}
 
             {/* Sidebar */}
-            <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 flex flex-col transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:h-screen ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+            <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-700 flex flex-col transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:h-screen ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
                 }`}>
-                <div className="p-6 border-b border-gray-100 flex items-center justify-between md:justify-center">
+                <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between md:justify-center">
                     <div className="flex items-center">
                         <div className="flex items-center align-middle space-x-4">
-                            <img src="/logo-ybm.png" alt="Logo" width={100} height={100} />
+                            <img src={isDark ? '/logo-ybm-white.png' : '/logo-ybm.png'} alt="Logo" width={100} height={100} />
                             <img src="/logo-bright.png" alt="Logo" width={100} height={100} />
                         </div>
                     </div>
-                    <button className="md:hidden text-gray-500 hover:text-gray-700" onClick={() => setIsMobileMenuOpen(false)}>
+                    <button className="md:hidden text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200" onClick={() => setIsMobileMenuOpen(false)}>
                         <X className="w-6 h-6" />
                     </button>
                 </div>
 
                 {/* User Info Section */}
-                <div className="p-6 border-b border-gray-100 flex flex-col items-center">
-                    <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center text-[#00529C] text-3xl font-bold mb-4 shadow-sm border-4 border-white ring-2 ring-blue-100 overflow-hidden">
+                <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex flex-col items-center">
+                    <div className="w-24 h-24 bg-blue-50 dark:bg-[#00529C]/20 rounded-full flex items-center justify-center text-[#00529C] dark:text-[#60b5ff] text-3xl font-bold mb-4 shadow-sm border-4 border-white dark:border-slate-800 ring-2 ring-blue-100 dark:ring-[#00529C]/30 overflow-hidden">
                         {avatarUrl ? (
                             <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                         ) : (
                             displayName.charAt(0).toUpperCase()
                         )}
                     </div>
-                    <h2 className="font-bold text-gray-800 text-center text-base truncate w-full px-2" title={displayName}>
+                    <h2 className="font-bold text-gray-800 dark:text-slate-100 text-center text-base truncate w-full px-2" title={displayName}>
                         {displayName}
                     </h2>
-                    <span className="mt-2 px-4 py-1.5 bg-[#15A4FA]/10 text-[#00529C] text-xs font-bold rounded-full uppercase tracking-wider">
+                    <span className="mt-2 px-4 py-1.5 bg-[#15A4FA]/10 text-[#00529C] dark:text-[#60b5ff] text-xs font-bold rounded-full uppercase tracking-wider">
                         {roleName}
                     </span>
                     {subtitle && (
-                        <p className="mt-1.5 text-[11px] text-gray-500 font-medium">{subtitle}</p>
+                        <p className="mt-1.5 text-[11px] text-gray-500 dark:text-slate-400 font-medium">{subtitle}</p>
                     )}
                 </div>
 
@@ -130,11 +136,11 @@ export default function DashboardShell({
                 </nav>
 
                 {/* Logout Button */}
-                <div className="p-4 border-t border-gray-100 bg-gray-50/50">
+                <div className="p-4 border-t border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/50">
                     <form action={logoutAction}>
                         <button
                             type="submit"
-                            className="flex items-center w-full px-4 py-3 text-sm font-semibold text-red-600 rounded-xl hover:bg-red-50 transition-colors"
+                            className="flex items-center w-full px-4 py-3 text-sm font-semibold text-red-600 dark:text-red-400 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                         >
                             <LogOut className="w-5 h-5 mr-3" />
                             Keluar
@@ -144,20 +150,20 @@ export default function DashboardShell({
             </aside>
 
             {/* Main Content Area */}
-            <div className="flex-1 flex flex-col min-w-0 md:pt-0 pt-16 h-screen overflow-y-auto bg-gray-50">
+            <div className="flex-1 flex flex-col min-w-0 md:pt-0 pt-16 h-screen overflow-y-auto bg-gray-50 dark:bg-slate-950">
                 {/* Mobile Header (Visible only on small screens) */}
-                <div className="fixed top-0 left-0 right-0 z-30 bg-white border-b border-gray-200 shadow-sm h-16 flex items-center justify-between px-4 md:hidden">
+                <div className="fixed top-0 left-0 right-0 z-30 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 shadow-sm h-16 flex items-center justify-between px-4 md:hidden">
                     <div className="flex items-center">
-                        <button onClick={() => setIsMobileMenuOpen(true)} className="text-gray-600 hover:text-[#00529C] mr-4 transition-colors">
+                        <button onClick={() => setIsMobileMenuOpen(true)} className="text-gray-600 hover:text-[#00529C] dark:text-slate-400 dark:hover:text-[#60b5ff] mr-4 transition-colors">
                             <Menu className="w-6 h-6" />
                         </button>
                         <div className="flex items-center align-middle space-x-4">
-                            <img src="/logo-ybm.png" alt="Logo" width={50} height={50} />
+                            <img src={isDark ? '/logo-ybm-white.png' : '/logo-ybm.png'} alt="Logo" width={50} height={50} />
                             <img src="/logo-bright.png" alt="Logo" width={50} height={50} />
                         </div>
                     </div>
-                    <Link href="/dashboard/profile" className="text-gray-600">
-                        <div className="w-9 h-9 rounded-full bg-blue-50 border-2 border-white ring-1 ring-blue-100 flex items-center justify-center text-[#00529C] font-bold overflow-hidden shadow-sm">
+                    <Link href="/dashboard/profile" className="text-gray-600 dark:text-slate-400">
+                        <div className="w-9 h-9 rounded-full bg-blue-50 dark:bg-[#00529C]/20 border-2 border-white dark:border-slate-800 ring-1 ring-blue-100 dark:ring-[#00529C]/30 flex items-center justify-center text-[#00529C] dark:text-[#60b5ff] font-bold overflow-hidden shadow-sm">
                             {avatarUrl ? <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" /> : displayName.charAt(0).toUpperCase()}
                         </div>
                     </Link>
