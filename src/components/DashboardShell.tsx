@@ -92,8 +92,9 @@ export default function DashboardShell({
                 }`}>
                 <div className="p-6 border-b border-gray-100 flex items-center justify-between md:justify-center">
                     <div className="flex items-center">
-                        <div className="w-10 h-10 bg-gradient-to-br from-[#00529C] to-[#15A4FA] rounded-xl flex items-center justify-center text-white font-bold text-xl mr-3 shadow-md">
-                            B
+                        <div className="flex items-center align-middle space-x-4">
+                            <img src="/logo-ybm.png" alt="Logo" width={100} height={100} />
+                            <img src="/logo-bright.png" alt="Logo" width={100} height={100} />
                         </div>
                         <h1 className="font-bold text-[#00529C] tracking-tight leading-tight">Bright Scholarship<br /><span className="text-[#15A4FA] text-sm">RO Makassar</span></h1>
                     </div>

@@ -58,41 +58,40 @@ export default function LoginPage() {
             <div className="max-w-5xl w-full flex rounded-3xl overflow-hidden shadow-2xl bg-white dark:bg-zinc-900 min-h-[600px]">
 
                 {/* Left Side - Branding */}
-                <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#00529C] to-[#15A4FA] p-12 flex-col justify-between relative overflow-hidden">
+                <div className="hidden lg:flex lg:w-1/2 bg-linear-to-br from-[#00529C] to-[#15A4FA] p-12 flex-col justify-between relative overflow-hidden">
                     {/* Decorative Elements */}
                     <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
                     <div className="absolute bottom-0 left-0 w-80 h-80 bg-[#15A4FA]/30 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4" />
 
                     <div className="relative z-10">
-                        <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-[#00529C] font-extrabold text-4xl mb-8 shadow-lg">
-                            B
-                        </div>
+
                         <h1 className="text-4xl font-bold text-white mb-4 leading-tight">
                             Selamat Datang di <br />
-                            <span className="text-blue-100">Bright Scholarship RO Makassar</span>
+                            <span className="text-blue-100">Sister Bright</span>
                         </h1>
                         <p className="text-white/80 text-lg max-w-sm">
-                            Pusat Informasi & Monitoring Bright Scholarship YBM BRILiaN RO Makassar
+                            Sistem Informasi Terpadu untuk memantau perkembangan Awardee Bright Scholarship YBM BRILiaN RO Makassar.
+
                         </p>
                     </div>
 
                     <div className="relative z-10">
-                        <div className="flex items-center space-x-4 text-white/80">
-                            <div className="h-px flex-1 bg-white/20"></div>
-                            <span className="text-sm font-medium tracking-wider">YBM BRILiaN</span>
-                            <div className="h-px flex-1 bg-white/20"></div>
+                        <div className="flex align-middle space-x-4">
+                            <img src="/logo-ybm-white.png" alt="Logo" width={120} />
+                            <img src="/logo-bright.png" alt="Logo" width={120} />
                         </div>
+
                     </div>
                 </div>
 
                 {/* Right Side - Form */}
                 <div className="w-full lg:w-1/2 p-8 sm:p-12 flex flex-col justify-center">
                     <div className="lg:hidden mb-8 text-center flex flex-col items-center">
-                        <div className="w-14 h-14 bg-gradient-to-br from-[#00529C] to-[#15A4FA] rounded-xl flex items-center justify-center text-white font-bold text-3xl mb-4 shadow-md">
+                        <div className="w-14 h-14 bg-linear-to-br from-[#00529C] to-[#15A4FA] rounded-xl flex items-center justify-center text-white font-bold text-3xl mb-4 shadow-md">
                             B
                         </div>
                         <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
-                            Bright Scholarship RO Makassar
+                            Sister Bright
                         </h2>
                     </div>
 

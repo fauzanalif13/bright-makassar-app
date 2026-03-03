@@ -5,29 +5,19 @@ export default function LandingPage() {
     <div className="min-h-screen flex flex-col font-sans bg-white">
       {/* Top Navbar */}
       <header className="fixed top-0 w-full bg-white/90 backdrop-blur-md shadow-sm z-50 border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-6">
           <div className="flex justify-between items-center h-20">
             {/* Logo area */}
-            <div className="flex items-center space-x-2">
-              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">
-                B
-              </div>
-              <span className="font-bold text-xl text-blue-900 tracking-tight">
-                Bright Scholarship RO Makassar
-              </span>
+            <div className="flex items-center align-middle space-x-4">
+              <img src="/logo-ybm.png" alt="Logo" width={100} height={100} />
+              <img src="/logo-bright.png" alt="Logo" width={100} height={100} />
             </div>
 
             {/* Navigation links & Login Button */}
             <div className="flex items-center space-x-6">
               <nav className="hidden md:flex space-x-8">
-                <Link href="#program" className="text-gray-600 hover:text-blue-600 font-medium transition-colors">
-                  Program
-                </Link>
                 <Link href="#tentang" className="text-gray-600 hover:text-blue-600 font-medium transition-colors">
                   Tentang Kami
-                </Link>
-                <Link href="#kontak" className="text-gray-600 hover:text-blue-600 font-medium transition-colors">
-                  Kontak
                 </Link>
               </nav>
               <Link
@@ -43,7 +33,7 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <main className="flex-grow pt-20">
-        <div className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-white to-blue-50 min-h-[calc(100vh-5rem)] flex items-center">
+        <div className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-white to-blue-50 min-h-[calc(100vh-5rem)] flex items-center ">
 
           {/* Decorative shapes */}
           <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
@@ -60,7 +50,7 @@ export default function LandingPage() {
                 </span>
               </h1>
               <p className="text-lg md:text-xl text-gray-600 mb-10 max-w-2xl mx-auto leading-relaxed">
-                Sistem Informasi Monitoring Beasiswa Terpadu untuk memantau perkembangan akademik dan sosial para penerima manfaat YBM BRILiaN.
+                Sistem Informasi Terpadu untuk memantau perkembangan Awardee Bright Scholarship YBM BRILiaN RO Makassar.
               </p>
 
               <div className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-4">
@@ -68,7 +58,7 @@ export default function LandingPage() {
                   href="/login"
                   className="w-full sm:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 text-lg"
                 >
-                  Masuk ke Dashboard
+                  Masuk
                 </Link>
                 <Link
                   href="#pelajari"
