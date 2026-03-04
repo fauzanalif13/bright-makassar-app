@@ -159,7 +159,6 @@ export default function OrganisasiPage() {
     const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; rowIndices: number[] }>({ isOpen: false, rowIndices: [] })
     function requestDelete(rowIndices: number[]) { setDeleteModal({ isOpen: true, rowIndices }) }
     async function handleDelete(rowIndices: number[]) {
-        setDeleteModal({ isOpen: false, rowIndices: [] })
         setIsDeleting(true)
 
         // Optimistic delete
@@ -168,6 +167,7 @@ export default function OrganisasiPage() {
 
         const result = await deleteOrganisasiEntries(rowIndices)
         setIsDeleting(false)
+        setDeleteModal({ isOpen: false, rowIndices: [] })
         if (result.error) {
             toast.error(result.error)
             fetchEntries(true)

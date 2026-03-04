@@ -59,9 +59,8 @@ export default function PembinaanPage() {
     const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; rowIndices: number[] }>({ isOpen: false, rowIndices: [] })
     function requestDelete(rowIndices: number[]) { setDeleteModal({ isOpen: true, rowIndices }) }
     async function handleDelete(rowIndices: number[]) {
-        setDeleteModal({ isOpen: false, rowIndices: [] })
         setIsDeleting(true); setEntries(prev => prev.filter(e => !rowIndices.includes(e.rowIndex))); setSelectedRows(new Set())
-        const result = await deletePembinaanEntries(rowIndices); setIsDeleting(false)
+        const result = await deletePembinaanEntries(rowIndices); setIsDeleting(false); setDeleteModal({ isOpen: false, rowIndices: [] })
         if (result.error) { toast.error(result.error); fetchEntries(true) } else toast.success(result.success!)
     }
 
