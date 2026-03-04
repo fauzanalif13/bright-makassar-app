@@ -123,8 +123,15 @@ export async function GET() {
             const validIdx = validIndices.indexOf(i)
             const rawVal = validIdx >= 0 ? (cellValues[validIdx] || '0') : '0'
             const hasRef = rangesToFetch[i] !== ''
-            const score = hasRef ? (parseFloat(rawVal.replace(',', '.')) || 0) : 0
-            return { bulan: t.displayLabel, skor: Math.round(score) }
+
+            let score: number | null = null
+            if (hasRef) {
+                // If the spreadsheet lacks data, it returns '0' or empty.
+                const num = parseFloat(rawVal.replace(',', '.'))
+                score = isNaN(num) ? 0 : num
+            }
+
+            return { bulan: t.displayLabel, skor: score !== null ? Math.round(score) : null, tahun: t.year }
         })
 
         return NextResponse.json({

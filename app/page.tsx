@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default function LandingPage() {
   return (
@@ -9,8 +10,8 @@ export default function LandingPage() {
           <div className="flex justify-between items-center h-20">
             {/* Logo area */}
             <div className="flex items-center align-middle space-x-4">
-              <img src="/logo-ybm.png" alt="Logo" width={100} height={100} />
-              <img src="/logo-bright.png" alt="Logo" width={100} height={100} />
+              <Image src="/logo-ybm.png" alt="Logo" width={100} height={100} className="w-[100px] h-auto object-contain" />
+              <Image src="/logo-bright.png" alt="Logo" width={100} height={100} className="w-[100px] h-auto object-contain" />
             </div>
 
             {/* Navigation links & Login Button */}

@@ -1,7 +1,7 @@
 'use client'
 
 import {
-    LineChart, Line, AreaChart, Area, BarChart, Bar,
+    LineChart, Line, BarChart, Bar,
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts'
 import { useTheme } from '@/src/components/ThemeProvider'

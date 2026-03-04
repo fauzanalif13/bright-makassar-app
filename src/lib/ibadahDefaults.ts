@@ -39,17 +39,8 @@ const FULL_YEAR_CELLS: Record<string, string> = {
     juni: 'AM126',
 }
 
-/** Year 1 partial mapping (only April-June are active) */
+/** Year 1: Only April (AM13), May (AM23), June (AM33) — scholarship typically starts mid-year */
 const YEAR1_CELLS: Record<string, string> = {
-    juli: '',
-    agustus: '',
-    september: '',
-    oktober: '',
-    november: '',
-    desember: '',
-    januari: '',
-    februari: '',
-    maret: '',
     april: 'AM13',
     mei: 'AM23',
     juni: 'AM33',

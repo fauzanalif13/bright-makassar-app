@@ -89,36 +89,42 @@ export async function getPerkuliahanData(): Promise<{
         let toefl: ToeflData = { predictionTest: '', toeflItp: '' }
         let ipIpk: IpIpkData = { semesters: Array(SEMESTER_COUNT).fill(''), ipk: '' }
 
-        // Find TOEFL section
-        for (let i = 0; i < rows.length; i++) {
-            const cellA = (rows[i][0] || '').trim().toLowerCase()
-            const cellB = (rows[i][1] || '').trim().toLowerCase()
-            if (cellA === TOEFL_ANCHOR.toLowerCase() || cellB === TOEFL_ANCHOR.toLowerCase()) {
-                // Next row has "Prediction Test" label and value
-                const predRow = rows[i + 1] || []
-                // Find value — scan row for the numeric value after "Prediction Test"
-                // Based on spreadsheet: col B = "Prediction Test", col D = value, col G = "TOEFL ITP", col I = value
-                toefl.predictionTest = normalizeDot(String(predRow[3] || ''))
-                toefl.toeflItp = normalizeDot(String(predRow[8] || ''))
-                break
-            }
+        // Find TOEFL section (search B first, then A, then C)
+        const toeflNorm = TOEFL_ANCHOR.toLowerCase()
+        let toeflIdx = -1
+        for (let i = 0; i < rows.length && toeflIdx === -1; i++) {
+            if ((rows[i][1] || '').trim().toLowerCase() === toeflNorm) toeflIdx = i
+        }
+        for (let i = 0; i < rows.length && toeflIdx === -1; i++) {
+            if ((rows[i][0] || '').trim().toLowerCase() === toeflNorm) toeflIdx = i
+        }
+        for (let i = 0; i < rows.length && toeflIdx === -1; i++) {
+            if ((rows[i][2] || '').trim().toLowerCase() === toeflNorm) toeflIdx = i
+        }
+        if (toeflIdx !== -1) {
+            const predRow = rows[toeflIdx + 1] || []
+            toefl.predictionTest = normalizeDot(String(predRow[3] || ''))
+            toefl.toeflItp = normalizeDot(String(predRow[8] || ''))
         }
 
-        // Find IP section
-        for (let i = 0; i < rows.length; i++) {
-            const cellA = (rows[i][0] || '').trim().toLowerCase()
-            const cellB = (rows[i][1] || '').trim().toLowerCase()
-            if (cellA === IP_ANCHOR.toLowerCase() || cellB === IP_ANCHOR.toLowerCase()) {
-                // Skip anchor + description + header = 3 rows to get to data
-                const dataRow = rows[i + 3] || []
-                // Smt 1-8 values in columns B through I (indices 1-8)
-                for (let s = 0; s < SEMESTER_COUNT; s++) {
-                    ipIpk.semesters[s] = normalizeDot(String(dataRow[s + 1] || ''))
-                }
-                // IPK is in the column after Smt 8 (index 9)
-                ipIpk.ipk = normalizeDot(String(dataRow[9] || ''))
-                break
+        // Find IP section (search B first, then A, then C)
+        const ipNorm = IP_ANCHOR.toLowerCase()
+        let ipIdx = -1
+        for (let i = 0; i < rows.length && ipIdx === -1; i++) {
+            if ((rows[i][1] || '').trim().toLowerCase() === ipNorm) ipIdx = i
+        }
+        for (let i = 0; i < rows.length && ipIdx === -1; i++) {
+            if ((rows[i][0] || '').trim().toLowerCase() === ipNorm) ipIdx = i
+        }
+        for (let i = 0; i < rows.length && ipIdx === -1; i++) {
+            if ((rows[i][2] || '').trim().toLowerCase() === ipNorm) ipIdx = i
+        }
+        if (ipIdx !== -1) {
+            const dataRow = rows[ipIdx + 3] || []
+            for (let s = 0; s < SEMESTER_COUNT; s++) {
+                ipIpk.semesters[s] = normalizeDot(String(dataRow[s + 1] || ''))
             }
+            ipIpk.ipk = normalizeDot(String(dataRow[9] || ''))
         }
 
         return { data: { toefl, ipIpk } }
@@ -146,13 +152,15 @@ export async function updateToeflData(formData: FormData): Promise<{
         // Find the TOEFL anchor row to get exact cell positions
         const rows = await getSheetData(spreadsheetId, `'${sheetName}'!A:K`)
         let anchorIdx = -1
-        for (let i = 0; i < rows.length; i++) {
-            const cellA = (rows[i][0] || '').trim().toLowerCase()
-            const cellB = (rows[i][1] || '').trim().toLowerCase()
-            if (cellA === TOEFL_ANCHOR.toLowerCase() || cellB === TOEFL_ANCHOR.toLowerCase()) {
-                anchorIdx = i
-                break
-            }
+        const tNorm = TOEFL_ANCHOR.toLowerCase()
+        for (let i = 0; i < rows.length && anchorIdx === -1; i++) {
+            if ((rows[i][1] || '').trim().toLowerCase() === tNorm) anchorIdx = i
+        }
+        for (let i = 0; i < rows.length && anchorIdx === -1; i++) {
+            if ((rows[i][0] || '').trim().toLowerCase() === tNorm) anchorIdx = i
+        }
+        for (let i = 0; i < rows.length && anchorIdx === -1; i++) {
+            if ((rows[i][2] || '').trim().toLowerCase() === tNorm) anchorIdx = i
         }
 
         if (anchorIdx === -1) return { error: 'Bagian "Kemampuan Bahasa Inggris" tidak ditemukan di sheet.' }
@@ -196,13 +204,15 @@ export async function updateIpIpkData(formData: FormData): Promise<{
         // Find the IP anchor row
         const rows = await getSheetData(spreadsheetId, `'${sheetName}'!A:K`)
         let anchorIdx = -1
-        for (let i = 0; i < rows.length; i++) {
-            const cellA = (rows[i][0] || '').trim().toLowerCase()
-            const cellB = (rows[i][1] || '').trim().toLowerCase()
-            if (cellA === IP_ANCHOR.toLowerCase() || cellB === IP_ANCHOR.toLowerCase()) {
-                anchorIdx = i
-                break
-            }
+        const iNorm = IP_ANCHOR.toLowerCase()
+        for (let i = 0; i < rows.length && anchorIdx === -1; i++) {
+            if ((rows[i][1] || '').trim().toLowerCase() === iNorm) anchorIdx = i
+        }
+        for (let i = 0; i < rows.length && anchorIdx === -1; i++) {
+            if ((rows[i][0] || '').trim().toLowerCase() === iNorm) anchorIdx = i
+        }
+        for (let i = 0; i < rows.length && anchorIdx === -1; i++) {
+            if ((rows[i][2] || '').trim().toLowerCase() === iNorm) anchorIdx = i
         }
 
         if (anchorIdx === -1) return { error: 'Bagian "Indeks Prestasi" tidak ditemukan di sheet.' }

@@ -5,45 +5,59 @@
  * for the Ibadah Trend chart.
  */
 
-export type RawTrendItem = { bulan: string; skor: number }
+export type RawTrendItem = { bulan: string; skor: number | null; tahun: number }
 
 export type EnrichedTrendItem = {
     bulan: string
-    skor: number
-    rataRataKeseluruhan: number   // Cumulative average up to this month
+    skor: number | null
+    rataRataKeseluruhan: number | null   // Cumulative average up to this month
     selisihBulanLalu: number      // Percentage difference vs previous month
+    tahun: number
 }
 
 /**
  * Enriches raw trend data with cumulative average and MoM delta.
- * Months with skor === 0 are treated as "no data" and excluded
+ * Months with skor === null or 0 are treated as "no data" and excluded
  * from cumulative calculations to avoid dragging the avg down.
  */
 export function enrichTrendData(raw: RawTrendItem[]): EnrichedTrendItem[] {
     let cumulativeSum = 0
     let cumulativeCount = 0
 
-    return raw.map((item, i) => {
-        // Cumulative average (only count months with actual data)
-        if (item.skor > 0) {
-            cumulativeSum += item.skor
+    // Filter out months that don't have a table data (skor === null)
+    const validRaw = raw.filter(item => item.skor !== null)
+
+    return validRaw.map((item, i) => {
+        // Cumulative average
+        if (item.skor! > 0) {
+            cumulativeSum += item.skor!
             cumulativeCount++
         }
         const rataRataKeseluruhan = cumulativeCount > 0
             ? Math.round((cumulativeSum / cumulativeCount) * 10) / 10
-            : 0
+            : null
 
         // Month-over-month difference
-        const prevSkor = i > 0 ? raw[i - 1].skor : 0
-        const selisihBulanLalu = i === 0 || prevSkor === 0
-            ? 0
-            : Math.round((item.skor - prevSkor) * 10) / 10
+        let selisihBulanLalu = 0
+        if (item.skor! > 0) {
+            let prevSkor = 0
+            for (let j = i - 1; j >= 0; j--) {
+                if (validRaw[j].skor! > 0) {
+                    prevSkor = validRaw[j].skor!
+                    break
+                }
+            }
+            if (prevSkor > 0) {
+                selisihBulanLalu = Math.round((item.skor! - prevSkor) * 10) / 10
+            }
+        }
 
         return {
             bulan: item.bulan,
             skor: item.skor,
             rataRataKeseluruhan,
             selisihBulanLalu,
+            tahun: item.tahun
         }
     })
 }

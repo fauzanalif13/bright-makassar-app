@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { loginAction } from './actions'
+import Image from 'next/image'
 import { createClient } from '@/src/utils/supabase/client'
 import { Eye, EyeOff, Loader2, Mail, Lock } from 'lucide-react'
 
@@ -77,8 +78,8 @@ export default function LoginPage() {
 
                     <div className="relative z-10">
                         <div className="flex align-middle space-x-4">
-                            <img src="/logo-ybm-white.png" alt="Logo" width={120} />
-                            <img src="/logo-bright.png" alt="Logo" width={120} />
+                            <Image src="/logo-ybm-white.png" alt="Logo" width={120} height={120} className="w-[120px] h-auto object-contain" />
+                            <Image src="/logo-bright.png" alt="Logo" width={120} height={120} className="w-[120px] h-auto object-contain" />
                         </div>
 
                     </div>

@@ -104,13 +104,25 @@ export default function PerkuliahanPage() {
         })
     }
 
+    /** Compute IPK as average of all non-empty semester IP values */
+    function computeIpk(values: string[]): string {
+        const nums = values
+            .map(v => parseFloat(v.replace(',', '.')))
+            .filter(n => !isNaN(n) && n > 0)
+        if (nums.length === 0) return ''
+        const avg = nums.reduce((a, b) => a + b, 0) / nums.length
+        return avg.toFixed(2)
+    }
+
+    const computedIpk = editingIp ? computeIpk(ipValues) : computeIpk(data?.ipIpk.semesters || [])
+
     async function saveIpIpk() {
         setIsSavingIp(true)
         const fd = new FormData()
         for (let i = 0; i < 8; i++) {
             fd.set(`smt${i + 1}`, ipValues[i].replace(',', '.'))
         }
-        fd.set('ipk', ipkValue.replace(',', '.'))
+        fd.set('ipk', computedIpk)
         const result = await updateIpIpkData(fd)
         setIsSavingIp(false)
         if (result.error) {
@@ -314,8 +326,8 @@ export default function PerkuliahanPage() {
                                                         />
                                                     ) : (
                                                         <span className={`text-lg font-bold ${data?.ipIpk.semesters[idx]
-                                                                ? 'text-gray-800 dark:text-slate-200'
-                                                                : 'text-gray-300 dark:text-slate-600'
+                                                            ? 'text-gray-800 dark:text-slate-200'
+                                                            : 'text-gray-300 dark:text-slate-600'
                                                             }`}>
                                                             {data?.ipIpk.semesters[idx] || '—'}
                                                         </span>
@@ -323,23 +335,12 @@ export default function PerkuliahanPage() {
                                                 </td>
                                             ))}
                                             <td className="px-2 py-4 border-l border-gray-200 dark:border-slate-600">
-                                                {editingIp ? (
-                                                    <input
-                                                        type="text"
-                                                        value={ipkValue}
-                                                        onChange={(e) => setIpkValue(e.target.value)}
-                                                        onBlur={() => setIpkValue(ipkValue.replace(',', '.'))}
-                                                        className="w-full min-w-[60px] px-2 py-2 bg-blue-50 dark:bg-[#00529C]/20 border border-[#15A4FA]/30 dark:border-[#00529C]/40 rounded-lg text-center text-sm font-bold text-[#00529C] dark:text-[#60b5ff] focus:ring-2 focus:ring-[#15A4FA]/40 outline-none"
-                                                        placeholder="0.00"
-                                                    />
-                                                ) : (
-                                                    <span className={`text-lg font-black ${data?.ipIpk.ipk
-                                                            ? 'text-[#00529C] dark:text-[#60b5ff]'
-                                                            : 'text-gray-300 dark:text-slate-600'
-                                                        }`}>
-                                                        {data?.ipIpk.ipk || '—'}
-                                                    </span>
-                                                )}
+                                                <span className={`text-lg font-black ${computedIpk
+                                                    ? 'text-[#00529C] dark:text-[#60b5ff]'
+                                                    : 'text-gray-300 dark:text-slate-600'
+                                                    }`}>
+                                                    {computedIpk || '—'}
+                                                </span>
                                             </td>
                                         </tr>
                                     </tbody>

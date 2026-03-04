@@ -699,8 +699,8 @@ export async function findTableBottom(
     sheetName: string,
     anchorText: string
 ): Promise<number> {
-    // 1. Fetch columns A and B of the entire sheet
-    const rows = await getSheetData(spreadsheetId, `'${sheetName}'!A:B`);
+    // 1. Fetch columns A, B and C of the entire sheet
+    const rows = await getSheetData(spreadsheetId, `'${sheetName}'!A:C`);
 
     if (!rows.length) {
         throw new Error(
@@ -708,24 +708,34 @@ export async function findTableBottom(
         );
     }
 
-    // 2. Find the anchor row (case-insensitive trim match in col A or B)
+    // 2. Find the anchor row (case-insensitive trim match)
+    //    Priority: search B first, then A, then C
     const normalizedAnchor = anchorText.trim().toLowerCase();
     let anchorRowIdx = -1;
 
     for (let i = 0; i < rows.length; i++) {
-        const cellA = (rows[i][0] || '').trim().toLowerCase();
         const cellB = (rows[i][1] || '').trim().toLowerCase();
+        if (cellB === normalizedAnchor) { anchorRowIdx = i; break; }
+    }
 
-        if (cellA === normalizedAnchor || cellB === normalizedAnchor) {
-            anchorRowIdx = i;
-            break;
+    if (anchorRowIdx === -1) {
+        for (let i = 0; i < rows.length; i++) {
+            const cellA = (rows[i][0] || '').trim().toLowerCase();
+            if (cellA === normalizedAnchor) { anchorRowIdx = i; break; }
+        }
+    }
+
+    if (anchorRowIdx === -1) {
+        for (let i = 0; i < rows.length; i++) {
+            const cellC = (rows[i][2] || '').trim().toLowerCase();
+            if (cellC === normalizedAnchor) { anchorRowIdx = i; break; }
         }
     }
 
     if (anchorRowIdx === -1) {
         throw new Error(
             `Anchor text "${anchorText}" not found in sheet "${sheetName}". ` +
-            `Searched ${rows.length} rows in columns A and B. ` +
+            `Searched ${rows.length} rows in columns A, B and C. ` +
             `Refusing to insert — check the exact header text in the spreadsheet.`
         );
     }

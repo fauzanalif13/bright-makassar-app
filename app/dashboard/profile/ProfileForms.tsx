@@ -5,13 +5,12 @@ import toast from 'react-hot-toast'
 import {
     updatePasswordAction, updateProfileDetailsAction, updateSpreadsheetAction,
     updateSheetConfigAction, updateIbadahHarianConfigAction,
-    updateEducationConfigAction,
-    updatePemberdayaanConfigAction, updateHafalanConfigAction,
+    updateHafalanConfigAction,
 } from './actions'
 import { uploadAvatarAction } from './avatar-actions'
 import {
-    Camera, Loader2, Save, KeyRound, User, Link2, BookOpen, GraduationCap,
-    Eye, EyeOff, HeartHandshake, ScrollText, Settings2, ChevronDown, CalendarDays,
+    Camera, Loader2, Save, KeyRound, User, Link2, BookOpen,
+    Eye, EyeOff, ScrollText, Settings2, ChevronDown, CalendarDays,
     Sun, Moon, Monitor
 } from 'lucide-react'
 import { ACADEMIC_MONTHS, getFullCellRef, getDailyBlockDefault } from '@/src/lib/ibadahDefaults'
@@ -28,8 +27,6 @@ type ProfileData = {
 const TABS = [
     { key: 'umum', label: 'Umum', icon: User },
     { key: 'ibadah', label: 'Ibadah', icon: BookOpen },
-    { key: 'pendidikan', label: 'Pendidikan', icon: GraduationCap },
-    { key: 'pemberdayaan', label: 'Pemberdayaan', icon: HeartHandshake },
     { key: 'hafalan', label: 'Hafalan', icon: ScrollText },
 ] as const
 
@@ -58,8 +55,6 @@ export default function ProfileForms({ initialData }: { initialData: ProfileData
     const [savingSpreadsheet, setSavingSpreadsheet] = useState(false)
     const [savingIbadah, setSavingIbadah] = useState(false)
     const [savingIbadahHarian, setSavingIbadahHarian] = useState(false)
-    const [savingPendidikan, setSavingPendidikan] = useState(false)
-    const [savingPemberdayaan, setSavingPemberdayaan] = useState(false)
     const [savingHafalan, setSavingHafalan] = useState(false)
 
     function sc(key: string): string {
@@ -255,8 +250,17 @@ export default function ProfileForms({ initialData }: { initialData: ProfileData
                                             {isExp && (
                                                 <div className="p-4 md:p-5 border-t border-gray-100 dark:border-slate-700 space-y-5 animate-in slide-in-from-top-2 duration-200">
                                                     <div>
+                                                        <Input
+                                                            id={`sheet_name_${yk}`}
+                                                            name={`sheet_name_${yk}`}
+                                                            label="Nama Sheet"
+                                                            defaultValue={savedY.sheet_name || `Tahun ke-${year}`}
+                                                            placeholder={`Tahun ke-${year}`}
+                                                        />
+                                                    </div>
+                                                    <div>
                                                         <p className="text-[11px] text-gray-500 dark:text-slate-400 mb-3 leading-relaxed">
-                                                            Pemetaan Sel Skor Ibadah (Rerata). Otomatis menggunakan awalan <code className="text-gray-700 dark:text-slate-300 font-semibold">&apos;Tahun ke-{year}&apos;!</code>
+                                                            Pemetaan Sel Skor Ibadah (Rerata). Otomatis divalidasi dengan Nama Sheet di atas.
                                                         </p>
                                                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                                                             {ACADEMIC_MONTHS.map(m => {
@@ -319,8 +323,17 @@ export default function ProfileForms({ initialData }: { initialData: ProfileData
                                             {isExp && (
                                                 <div className="p-4 md:p-5 border-t border-gray-100 dark:border-slate-700 space-y-5 animate-in slide-in-from-top-2 duration-200">
                                                     <div>
+                                                        <Input
+                                                            id={`sheet_name_${yk}`}
+                                                            name={`sheet_name_${yk}`}
+                                                            label="Nama Sheet"
+                                                            defaultValue={savedHarian.sheet_name || `Tahun ke-${year}`}
+                                                            placeholder={`Tahun ke-${year}`}
+                                                        />
+                                                    </div>
+                                                    <div>
                                                         <p className="text-[11px] text-gray-500 dark:text-slate-400 mb-3 leading-relaxed">
-                                                            Block range harian untuk sheet <code className="text-gray-700 dark:text-slate-300 font-semibold">&apos;Tahun ke-{year}&apos;</code>. Format: <code className="text-gray-700 dark:text-slate-300 font-semibold">G13:AK20</code>
+                                                            Block range harian untuk sheet yang dikonfigurasi. Format: <code className="text-gray-700 dark:text-slate-300 font-semibold">G13:AK20</code>
                                                         </p>
                                                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                                                             {ACADEMIC_MONTHS.map(m => {
@@ -355,37 +368,7 @@ export default function ProfileForms({ initialData }: { initialData: ProfileData
                 </div>
             )}
 
-            {/* ─── Tab: Pendidikan ────────────────────────────────────────── */}
-            {activeTab === 'pendidikan' && (
-                <Card icon={<GraduationCap className="w-4 h-4 text-[#00529C] dark:text-[#60b5ff]" />} title="Konfigurasi Chart Pendidikan">
-                    <p className="text-xs text-gray-500 dark:text-slate-400 mb-5 leading-relaxed">
-                        Tentukan range sel dari sheet Resume untuk data pendidikan.
-                    </p>
-                    <form onSubmit={(e) => handleForm(updateEducationConfigAction, setSavingPendidikan, e)} className="space-y-4 max-w-xl">
-                        <Input id="ipIpkRange" name="ipIpkRange" label="Range IP & IPK" defaultValue={sc('ip_ipk_range') || ''} placeholder="Resume!B48:I48" />
-                        <Input id="pembinaanRange" name="pembinaanRange" label="Range Pembinaan S/H Skills" defaultValue={sc('pembinaan_range') || ''} placeholder="Resume!B73:J95" />
-                        <Input id="prestasiRange" name="prestasiRange" label="Range Riwayat Prestasi" defaultValue={sc('prestasi_range') || ''} placeholder="Resume!B108:J120" />
-                        <Input id="organisasiRange" name="organisasiRange" label="Range Riwayat Organisasi" defaultValue={sc('organisasi_range') || ''} placeholder="Resume!B127:J132" />
-                        <Input id="workshopRange" name="workshopRange" label="Range Workshop / Seminar" defaultValue={sc('workshop_range') || ''} placeholder="Resume!B137:J158" />
-                        <SubmitBtn loading={savingPendidikan} label="Simpan Konfigurasi Pendidikan" />
-                    </form>
-                </Card>
-            )}
 
-            {/* ─── Tab: Pemberdayaan ──────────────────────────────────────── */}
-            {activeTab === 'pemberdayaan' && (
-                <Card icon={<HeartHandshake className="w-4 h-4 text-[#00529C] dark:text-[#60b5ff]" />} title="Konfigurasi Chart Pemberdayaan">
-                    <p className="text-xs text-gray-500 dark:text-slate-400 mb-5 leading-relaxed">
-                        Tentukan range sel untuk data pemberdayaan masyarakat.
-                    </p>
-                    <form onSubmit={(e) => handleForm(updatePemberdayaanConfigAction, setSavingPemberdayaan, e)} className="space-y-4 max-w-xl">
-                        <Input id="kunjunganRange" name="kunjunganRange" label="Range Kunjungan Program" defaultValue={sc('kunjungan_range') || ''} placeholder="Resume!B164:J187" />
-                        <Input id="portfolioRange" name="portfolioRange" label="Range Portfolio Social Project" defaultValue={sc('portfolio_range') || ''} placeholder="Resume!B192:J197" />
-                        <Input id="narasumberRange" name="narasumberRange" label="Range Narasumber Pemberdayaan" defaultValue={sc('narasumber_range') || ''} placeholder="Resume!B202:J207" />
-                        <SubmitBtn loading={savingPemberdayaan} label="Simpan Konfigurasi Pemberdayaan" />
-                    </form>
-                </Card>
-            )}
 
             {/* ─── Tab: Hafalan ───────────────────────────────────────────── */}
             {activeTab === 'hafalan' && (

@@ -32,7 +32,7 @@ const ACHIEVEMENT_COLORS_DARK: Record<string, string> = {
 // ─── Types ──────────────────────────────────────────────────────────
 
 export type IbadahComparisonItem = { aktivitas: string; current: number; previous: number }
-export type IbadahTrendItem = { bulan: string; skor: number }
+export type IbadahTrendItem = { bulan: string; skor: number | null; tahun: number }
 export type IpIpkItem = { semester: string; IP: number; IPK: number }
 export type AchievementItem = { name: string; count: number }
 
@@ -92,6 +92,15 @@ function IbadahCustomTooltip({ active, payload, label }: any) {
     const data = payload[0]?.payload as EnrichedTrendItem | undefined
     if (!data) return null
 
+    if (data.skor === null) {
+        return (
+            <div className={`rounded-xl shadow-lg border px-4 py-3 min-w-[200px] ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'}`}>
+                <p className={`text-sm font-bold mb-1 ${isDark ? 'text-slate-100' : 'text-gray-900'}`}>{label}</p>
+                <p className={`text-xs italic ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Belum ada data</p>
+            </div>
+        )
+    }
+
     const delta = data.selisihBulanLalu
     const isUp = delta > 0
     const hasChange = delta !== 0
@@ -106,7 +115,7 @@ function IbadahCustomTooltip({ active, payload, label }: any) {
                 </p>
                 <p className={`text-xs ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
                     <span className="font-semibold">Rata-rata ibadah keseluruhan:</span>{' '}
-                    <span className={`font-bold ${isDark ? 'text-[#a78bfa]' : 'text-[#8B5CF6]'}`}>{data.rataRataKeseluruhan}%</span>
+                    <span className={`font-bold ${isDark ? 'text-[#a78bfa]' : 'text-[#8B5CF6]'}`}>{data.rataRataKeseluruhan ?? 0}%</span>
                 </p>
                 {hasChange && (
                     <p className={`text-xs italic mt-1 ${isUp ? 'text-emerald-500' : 'text-red-400'}`}>
@@ -180,14 +189,16 @@ export default function AwardeeDashboardClient({
                 .then(r => r.ok ? r.json() : null)
                 .then(data => {
                     if (cancelled || !data) return
-                    setIbadahComparison(data.ibadahComparison || [])
-                    setAllTrendData(data.allTrendData || [])
+
+                    setIbadahComparison(prev => JSON.stringify(prev) === JSON.stringify(data.ibadahComparison) ? prev : (data.ibadahComparison || []))
+                    setAllTrendData(prev => JSON.stringify(prev) === JSON.stringify(data.allTrendData) ? prev : (data.allTrendData || []))
+
                     setCachedData('dashboard_ibadah', {
                         ibadahComparison: data.ibadahComparison || [],
                         allTrendData: data.allTrendData || [],
                     })
                 })
-                .catch(() => {}) // silently fail background refresh
+                .catch(() => { }) // silently fail background refresh
             return
         }
 
@@ -199,8 +210,10 @@ export default function AwardeeDashboardClient({
             })
             .then(data => {
                 if (cancelled) return
-                setIbadahComparison(data.ibadahComparison || [])
-                setAllTrendData(data.allTrendData || [])
+
+                setIbadahComparison(prev => JSON.stringify(prev) === JSON.stringify(data.ibadahComparison) ? prev : (data.ibadahComparison || []))
+                setAllTrendData(prev => JSON.stringify(prev) === JSON.stringify(data.allTrendData) ? prev : (data.allTrendData || []))
+
                 setCachedData('dashboard_ibadah', {
                     ibadahComparison: data.ibadahComparison || [],
                     allTrendData: data.allTrendData || [],
@@ -234,14 +247,16 @@ export default function AwardeeDashboardClient({
                 .then(r => r.ok ? r.json() : null)
                 .then(data => {
                     if (cancelled || !data) return
-                    setIpIpkData(data.ipIpkData || [])
-                    setAchievementData(data.achievementData || [])
+
+                    setIpIpkData(prev => JSON.stringify(prev) === JSON.stringify(data.ipIpkData) ? prev : (data.ipIpkData || []))
+                    setAchievementData(prev => JSON.stringify(prev) === JSON.stringify(data.achievementData) ? prev : (data.achievementData || []))
+
                     setCachedData('dashboard_pendidikan', {
                         ipIpkData: data.ipIpkData || [],
                         achievementData: data.achievementData || [],
                     })
                 })
-                .catch(() => {})
+                .catch(() => { })
             return
         }
 
@@ -252,8 +267,10 @@ export default function AwardeeDashboardClient({
             })
             .then(data => {
                 if (cancelled) return
-                setIpIpkData(data.ipIpkData || [])
-                setAchievementData(data.achievementData || [])
+
+                setIpIpkData(prev => JSON.stringify(prev) === JSON.stringify(data.ipIpkData) ? prev : (data.ipIpkData || []))
+                setAchievementData(prev => JSON.stringify(prev) === JSON.stringify(data.achievementData) ? prev : (data.achievementData || []))
+
                 setCachedData('dashboard_pendidikan', {
                     ipIpkData: data.ipIpkData || [],
                     achievementData: data.achievementData || [],
@@ -270,32 +287,38 @@ export default function AwardeeDashboardClient({
     const [selectedTahun, setSelectedTahun] = useState(defaultTahun)
     const [selectedSpan, setSelectedSpan] = useState(6)
 
-    const defaultStart = (defaultTahun - 1) * 12
-    const [brushStart, setBrushStart] = useState(defaultStart)
-    const [brushEnd, setBrushEnd] = useState(defaultStart + 5)
-
-    // Update brush end when trend data arrives
-    useEffect(() => {
-        if (allTrendData.length > 0) {
-            setBrushEnd(Math.min(brushStart + selectedSpan - 1, allTrendData.length - 1))
-        }
-    }, [allTrendData.length]) // eslint-disable-line react-hooks/exhaustive-deps
+    const [brushStart, setBrushStart] = useState(0)
+    const [brushEnd, setBrushEnd] = useState(5)
 
     const enrichedData = useMemo(() => enrichTrendData(allTrendData), [allTrendData])
+
+    // Provide initial jump to the default tahun when data first loads
+    const initialJumpDone = useRef(false)
+    useEffect(() => {
+        if (!initialJumpDone.current && enrichedData.length > 0) {
+            initialJumpDone.current = true
+            const startIdx = enrichedData.findIndex(d => d.tahun === selectedTahun)
+            const start = startIdx >= 0 ? startIdx : 0
+            const end = Math.min(start + selectedSpan - 1, Math.max(0, enrichedData.length - 1))
+            setBrushStart(start)
+            setBrushEnd(end)
+        }
+    }, [enrichedData, selectedTahun, selectedSpan])
 
     const handleTahunChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
         const val = parseInt(e.target.value)
         setSelectedTahun(val)
-        const start = (val - 1) * 12
-        const end = Math.min(start + selectedSpan - 1, enrichedData.length - 1)
+        const startIdx = enrichedData.findIndex(d => d.tahun === val)
+        const start = startIdx >= 0 ? startIdx : 0
+        const end = Math.min(start + selectedSpan - 1, Math.max(0, enrichedData.length - 1))
         setBrushStart(start)
         setBrushEnd(end)
-    }, [selectedSpan, enrichedData.length])
+    }, [selectedSpan, enrichedData])
 
     const handleSpanChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
         const val = parseInt(e.target.value)
         setSelectedSpan(val)
-        const end = Math.min(brushStart + val - 1, enrichedData.length - 1)
+        const end = Math.min(brushStart + val - 1, Math.max(0, enrichedData.length - 1))
         setBrushEnd(end)
     }, [brushStart, enrichedData.length])
 

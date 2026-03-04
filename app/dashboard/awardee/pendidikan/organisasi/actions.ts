@@ -72,10 +72,14 @@ export async function getOrganisasiEntries(forceRefresh = false): Promise<{
 
         const normalizedAnchor = ORGANISASI_ANCHOR.trim().toLowerCase()
         let anchorIdx = -1
-        for (let i = 0; i < rows.length; i++) {
-            const cellA = (rows[i][0] || '').trim().toLowerCase()
-            const cellB = (rows[i][1] || '').trim().toLowerCase()
-            if (cellA === normalizedAnchor || cellB === normalizedAnchor) { anchorIdx = i; break }
+        for (let i = 0; i < rows.length && anchorIdx === -1; i++) {
+            if ((rows[i][1] || '').trim().toLowerCase() === normalizedAnchor) anchorIdx = i
+        }
+        for (let i = 0; i < rows.length && anchorIdx === -1; i++) {
+            if ((rows[i][0] || '').trim().toLowerCase() === normalizedAnchor) anchorIdx = i
+        }
+        for (let i = 0; i < rows.length && anchorIdx === -1; i++) {
+            if ((rows[i][2] || '').trim().toLowerCase() === normalizedAnchor) anchorIdx = i
         }
 
         if (anchorIdx === -1) return { data: [] }

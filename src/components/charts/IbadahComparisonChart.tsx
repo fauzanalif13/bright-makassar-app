@@ -40,7 +40,7 @@ export type IbadahComparisonChartProps = {
 // ─── Helpers ─────────────────────────────────────────────────────────
 
 /** Dynamic academic year options (same logic as Trendline chart) */
-function getYearOptions(angkatan: number): { value: number; label: string }[] {
+function getYearOptions(): { value: number; label: string }[] {
     return [1, 2, 3, 4].map(yr => ({
         value: yr,
         label: `Tahun ke-${yr}`,
@@ -98,7 +98,7 @@ export default function IbadahComparisonChart({
     // ─── Derived: Academic year for each side ────────────────────────
     const academicYearA = useMemo(() => toAcademicYear(angkatan, monthA, yearA), [angkatan, monthA, yearA])
     const academicYearB = useMemo(() => toAcademicYear(angkatan, monthB, yearB), [angkatan, monthB, yearB])
-    const yearOptions = useMemo(() => getYearOptions(angkatan), [angkatan])
+    const yearOptions = useMemo(() => getYearOptions(), [])
 
     // ─── Theme-aware colors ──────────────────────────────────────────
     const colorA = isDark ? COLOR_MONTH_A_DARK : COLOR_MONTH_A_LIGHT

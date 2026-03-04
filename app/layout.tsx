@@ -3,7 +3,10 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import ThemeProvider from "@/src/components/ThemeProvider";
 import CookieConsent from "@/src/components/CookieConsent";
+import { LoadingProvider } from "@/src/components/LoadingProvider";
 import "./globals.css";
+//Speed Insights Vercel
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,7 +20,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Pijar Bright RO Makassar",
-  description: "Sistem Informasi Bright Scholarship RO Makassar",
+  description: "Pusat Informasi & Jejaring Awardee Bright Scholarship RO Makassar",
 };
 
 // Inline script to prevent flash of wrong theme on load
@@ -46,9 +49,12 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ThemeProvider>
-          <CookieConsent />
-          {children}
-          <Toaster position="top-center" />
+          <LoadingProvider>
+            <CookieConsent />
+            {children}
+            <Toaster position="top-center" />
+            <SpeedInsights />
+          </LoadingProvider>
         </ThemeProvider>
       </body>
     </html>

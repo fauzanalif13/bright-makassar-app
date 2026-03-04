@@ -90,7 +90,7 @@ export async function updateSheetConfigAction(formData: FormData) {
 
     for (let year = 1; year <= 4; year++) {
         const yk = `tahun_${year}`
-        const sheetName = `Tahun ke-${year}`
+        const sheetName = (formData.get(`sheet_name_${yk}`) as string)?.trim() || `Tahun ke-${year}`
 
         const months: Record<string, string> = {}
         MONTHS.forEach(m => {
@@ -133,7 +133,7 @@ export async function updateIbadahHarianConfigAction(formData: FormData) {
 
     for (let year = 1; year <= 4; year++) {
         const yk = `tahun_${year}`
-        const sheetName = `Tahun ke-${year}`
+        const sheetName = (formData.get(`sheet_name_${yk}`) as string)?.trim() || `Tahun ke-${year}`
 
         const months: Record<string, string> = {}
         MONTHS.forEach(m => {
@@ -169,23 +169,7 @@ export async function updateIbadahHarianConfigAction(formData: FormData) {
     })
 }
 
-export async function updateEducationConfigAction(formData: FormData) {
-    return mergeSheetConfig({
-        ip_ipk_range: (formData.get('ipIpkRange') as string)?.trim() || '',
-        pembinaan_range: (formData.get('pembinaanRange') as string)?.trim() || '',
-        prestasi_range: (formData.get('prestasiRange') as string)?.trim() || '',
-        organisasi_range: (formData.get('organisasiRange') as string)?.trim() || '',
-        workshop_range: (formData.get('workshopRange') as string)?.trim() || '',
-    })
-}
 
-export async function updatePemberdayaanConfigAction(formData: FormData) {
-    return mergeSheetConfig({
-        kunjungan_range: (formData.get('kunjunganRange') as string)?.trim() || '',
-        portfolio_range: (formData.get('portfolioRange') as string)?.trim() || '',
-        narasumber_range: (formData.get('narasumberRange') as string)?.trim() || '',
-    })
-}
 
 export async function updateHafalanConfigAction(formData: FormData) {
     return mergeSheetConfig({

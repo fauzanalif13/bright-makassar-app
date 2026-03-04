@@ -21,26 +21,51 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
+  // Wrap getUser() to handle stale/invalid refresh tokens gracefully
+  let user = null
+  try {
+    const { data, error } = await supabase.auth.getUser()
+    if (error) {
+      // Invalid refresh token — clear all Supabase auth cookies
+      const redirectUrl = new URL('/login', request.url)
+      const response = NextResponse.redirect(redirectUrl)
+      request.cookies.getAll().forEach(cookie => {
+        if (cookie.name.startsWith('sb-')) {
+          response.cookies.delete(cookie.name)
+        }
+      })
+      // Only redirect if on a protected route; on public pages just continue
+      if (request.nextUrl.pathname.startsWith('/dashboard')) {
+        return response
+      }
+      // For public pages, just continue without a user
+    } else {
+      user = data.user
+    }
+  } catch {
+    // Fallback: any unexpected auth error — redirect to login on protected routes
+    if (request.nextUrl.pathname.startsWith('/dashboard')) {
+      const redirectUrl = new URL('/login', request.url)
+      const response = NextResponse.redirect(redirectUrl)
+      request.cookies.getAll().forEach(cookie => {
+        if (cookie.name.startsWith('sb-')) {
+          response.cookies.delete(cookie.name)
+        }
+      })
+      return response
+    }
+  }
 
   // Protect /dashboard routes strictly
   if (request.nextUrl.pathname.startsWith('/dashboard')) {
     if (!user) {
-      // Not logged in, redirect immediately to login page
       const redirectUrl = new URL('/login', request.url)
-      // redirectUrl.searchParams.set('redirectedFrom', request.nextUrl.pathname) // Optional: for UX
       return NextResponse.redirect(redirectUrl)
     }
   }
 
   // Redirect logged in user from /login back to their dashboard
   if (request.nextUrl.pathname === '/login' && user) {
-    // Need to fetch role to redirect appropriately, 
-    // however fetching DB inside middleware is generally slow, 
-    // we can redirect to a dispatcher or just admin temporarily if we don't have role.
-    // Better approach: Redirect to a general /dashboard and let a server component handle the role-based dispatch,
-    // But user requested /dashboard/admin and /dashboard/awardee. 
-    // So we will just redirect to a generic /dashboard which will handle the dispatching.
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import Image from 'next/image'
 import { menuConfig, MenuItem } from '@/src/lib/menuConfig'
 import { Menu, X, LogOut, ChevronDown, ChevronRight } from 'lucide-react'
 import { logoutAction } from '@/app/dashboard/actions'
@@ -125,8 +126,8 @@ export default function DashboardShell({
                 <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between md:justify-center">
                     <div className="flex items-center">
                         <div className="flex items-center align-middle space-x-4">
-                            <img src={isDark ? '/logo-ybm-white.png' : '/logo-ybm.png'} alt="Logo" width={100} height={100} />
-                            <img src="/logo-bright.png" alt="Logo" width={100} height={100} />
+                            <Image src={isDark ? '/logo-ybm-white.png' : '/logo-ybm.png'} alt="Logo" width={100} height={100} className="w-[100px] h-auto object-contain" />
+                            <Image src="/logo-bright.png" alt="Logo" width={100} height={100} className="w-[100px] h-auto object-contain" />
                         </div>
                     </div>
                     <button className="md:hidden text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200" onClick={() => setIsMobileMenuOpen(false)}>
@@ -182,8 +183,8 @@ export default function DashboardShell({
                             <Menu className="w-6 h-6" />
                         </button>
                         <div className="flex items-center align-middle space-x-4">
-                            <img src={isDark ? '/logo-ybm-white.png' : '/logo-ybm.png'} alt="Logo" width={50} height={50} />
-                            <img src="/logo-bright.png" alt="Logo" width={50} height={50} />
+                            <Image src={isDark ? '/logo-ybm-white.png' : '/logo-ybm.png'} alt="Logo" width={50} height={50} className="w-[50px] h-auto object-contain" />
+                            <Image src="/logo-bright.png" alt="Logo" width={50} height={50} className="w-[50px] h-auto object-contain" />
                         </div>
                     </div>
                     <Link href="/dashboard/profile" className="text-gray-600 dark:text-slate-400">
