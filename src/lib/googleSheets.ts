@@ -62,7 +62,7 @@ async function withRetry<T>(fn: () => Promise<T>, label: string): Promise<T> {
 
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 
-function getAuthClient() {
+export function getAuthClient() {
     const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
     const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
@@ -654,7 +654,7 @@ export async function updateFixedGrid(
  *
  * @throws Error if the sheet name is not found in the spreadsheet.
  */
-async function getSheetId(
+export async function getSheetId(
     spreadsheetId: string,
     sheetName: string
 ): Promise<number> {

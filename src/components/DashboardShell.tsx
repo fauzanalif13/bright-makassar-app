@@ -194,9 +194,68 @@ export default function DashboardShell({
                 </div>
 
                 {/* Page Content */}
-                <main className="p-4 sm:p-6 md:p-8 lg:p-10 max-w-7xl mx-auto w-full">
+                <main className="p-4 sm:p-6 md:p-8 lg:p-10 max-w-7xl mx-auto w-full flex-1">
                     {children}
                 </main>
+
+                {/* Footer */}
+                <footer className="w-full border-t border-gray-200 dark:border-slate-700/60 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm mt-auto">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 py-5">
+                        {/* Credit line */}
+                        <p className="text-center text-sm text-gray-600 dark:text-slate-400 font-medium">
+                            Made by{' '}
+                            <span className="text-[#00529C] dark:text-[#60b5ff] font-semibold">Fauzan Alif Anwar</span>
+                            <span className="text-gray-400 dark:text-slate-600 mx-1.5">•</span>
+                            Fasilitator Putra YBM BRILiaN RO Makassar
+                        </p>
+
+                        {/* Copyright & social links */}
+                        <div className="mt-3 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-xs text-gray-500 dark:text-slate-500">
+                            {/* Copyright */}
+                            <span className="flex items-center gap-1">
+                                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <path d="M14.83 14.83a4 4 0 1 1 0-5.66" />
+                                </svg>
+                                2026
+                            </span>
+
+                            <span className="hidden sm:inline text-gray-300 dark:text-slate-700">|</span>
+
+                            {/* Instagram */}
+                            <a
+                                href="https://instagram.com/barengsiojan"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 text-gray-500 dark:text-slate-500 hover:text-[#E1306C] dark:hover:text-[#E1306C] transition-colors"
+                            >
+                                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+                                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                                    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+                                </svg>
+                                @barengsiojan
+                            </a>
+
+                            <span className="hidden sm:inline text-gray-300 dark:text-slate-700">|</span>
+
+                            {/* LinkedIn */}
+                            <a
+                                href="https://linkedin.com/in/fauzanalif"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 text-gray-500 dark:text-slate-500 hover:text-[#0A66C2] dark:hover:text-[#60b5ff] transition-colors"
+                            >
+                                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
+                                    <rect x="2" y="9" width="4" height="12" />
+                                    <circle cx="4" cy="4" r="2" />
+                                </svg>
+                                Fauzan Alif Anwar
+                            </a>
+                        </div>
+                    </div>
+                </footer>
             </div>
         </div>
     )
