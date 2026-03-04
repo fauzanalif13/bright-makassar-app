@@ -1,5 +1,65 @@
 import { google } from 'googleapis';
 
+// ═══════════════════════════════════════════════════════════════════════
+// Server-side in-memory cache with TTL — shared across all requests
+// in the same Node.js process. Prevents redundant API calls.
+// ═══════════════════════════════════════════════════════════════════════
+
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const serverCache = new Map<string, { data: any; expiry: number }>();
+
+function getCached<T>(key: string): T | null {
+    const entry = serverCache.get(key);
+    if (!entry) return null;
+    if (Date.now() > entry.expiry) {
+        serverCache.delete(key);
+        return null;
+    }
+    return entry.data as T;
+}
+
+function setCache(key: string, data: any, ttlMs: number = CACHE_TTL_MS): void {
+    serverCache.set(key, { data, expiry: Date.now() + ttlMs });
+}
+
+/** Evict stale entries periodically (runs at most once per minute) */
+let lastPurge = 0;
+function purgeStale() {
+    const now = Date.now();
+    if (now - lastPurge < 60_000) return;
+    lastPurge = now;
+    for (const [key, entry] of serverCache) {
+        if (now > entry.expiry) serverCache.delete(key);
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Retry with exponential backoff — handles Google Sheets 429 rate limits
+// ═══════════════════════════════════════════════════════════════════════
+
+const MAX_RETRIES = 3;
+const BASE_DELAY_MS = 1000;
+
+async function withRetry<T>(fn: () => Promise<T>, label: string): Promise<T> {
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        try {
+            return await fn();
+        } catch (err: any) {
+            const status = err?.code || err?.status || err?.response?.status;
+            if (status === 429 && attempt < MAX_RETRIES) {
+                const delay = BASE_DELAY_MS * Math.pow(2, attempt);
+                console.warn(
+                    `[withRetry] ${label}: 429 rate limited, retrying in ${delay}ms (attempt ${attempt + 1}/${MAX_RETRIES})`
+                );
+                await new Promise(r => setTimeout(r, delay));
+                continue;
+            }
+            throw err;
+        }
+    }
+    throw new Error(`[withRetry] ${label}: exhausted all ${MAX_RETRIES} retries`);
+}
+
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 
 function getAuthClient() {
@@ -42,20 +102,32 @@ export async function appendDataToSheet(
 
 /**
  * Read data from a Google Sheet range.
+ * Results are cached in-memory for 5 minutes to reduce API calls.
  */
 export async function getSheetData(
     spreadsheetId: string,
     range: string
 ): Promise<string[][]> {
-    const auth = getAuthClient();
-    const sheets = google.sheets({ version: 'v4', auth });
+    purgeStale();
+    const cacheKey = `sheet:${spreadsheetId}:${range}`;
+    const cached = getCached<string[][]>(cacheKey);
+    if (cached) {
+        console.log(`[getSheetData] Cache HIT: ${range}`);
+        return cached;
+    }
 
-    const response = await sheets.spreadsheets.values.get({
-        spreadsheetId,
-        range,
-    });
+    const result = await withRetry(async () => {
+        const auth = getAuthClient();
+        const sheets = google.sheets({ version: 'v4', auth });
+        const response = await sheets.spreadsheets.values.get({
+            spreadsheetId,
+            range,
+        });
+        return (response.data.values as string[][]) || [];
+    }, `getSheetData(${range})`);
 
-    return (response.data.values as string[][]) || [];
+    setCache(cacheKey, result);
+    return result;
 }
 
 /**
@@ -67,23 +139,33 @@ export async function getBatchCellValues(
     ranges: string[]
 ): Promise<string[]> {
     if (!ranges.length) return []
-    const auth = getAuthClient();
-    const sheets = google.sheets({ version: 'v4', auth });
+    purgeStale();
+    const cacheKey = `batch:${spreadsheetId}:${ranges.join(',')}`;
+    const cached = getCached<string[]>(cacheKey);
+    if (cached) {
+        console.log(`[getBatchCellValues] Cache HIT (${ranges.length} ranges)`);
+        return cached;
+    }
 
     try {
-        const response = await sheets.spreadsheets.values.batchGet({
-            spreadsheetId,
-            ranges,
-        });
+        const result = await withRetry(async () => {
+            const auth = getAuthClient();
+            const sheets = google.sheets({ version: 'v4', auth });
+            const response = await sheets.spreadsheets.values.batchGet({
+                spreadsheetId,
+                ranges,
+            });
+            const valueRanges = response.data.valueRanges || []
+            return valueRanges.map(vr => {
+                const val = vr.values?.[0]?.[0]
+                return val !== undefined ? String(val) : ''
+            })
+        }, `getBatchCellValues(${ranges.length} ranges)`);
 
-        const valueRanges = response.data.valueRanges || []
-        return valueRanges.map(vr => {
-            const val = vr.values?.[0]?.[0]
-            return val !== undefined ? String(val) : ''
-        })
+        setCache(cacheKey, result);
+        return result;
     } catch (e: any) {
         console.error('getBatchCellValues error (ensure sheets exist!):', e.message)
-        // If a sheet doesn't exist, the whole batchGet fails. Return empty array to default to 0.
         return new Array(ranges.length).fill('')
     }
 }
@@ -810,3 +892,67 @@ export async function countTableRows(
     }
 }
 
+/**
+ * Count data rows for MULTIPLE anchors from a single sheet fetch.
+ * This avoids repeated getSheetData calls for the same Resume sheet.
+ *
+ * @param spreadsheetId - Google Sheets spreadsheet ID
+ * @param sheetName     - Sheet name (e.g. "Resume")
+ * @param anchors       - Array of { anchor, skipRows } entries
+ * @returns Array of counts matching the input order
+ */
+export async function countMultipleTableRows(
+    spreadsheetId: string,
+    sheetName: string,
+    anchors: { anchor: string; skipRows: number }[]
+): Promise<number[]> {
+    if (!anchors.length) return [];
+
+    let rows: string[][];
+    try {
+        rows = await getSheetData(spreadsheetId, `'${sheetName}'!A:B`);
+    } catch (err) {
+        console.error(`[countMultipleTableRows] Error fetching sheet:`, err);
+        return new Array(anchors.length).fill(0);
+    }
+
+    if (!rows.length) return new Array(anchors.length).fill(0);
+
+    return anchors.map(({ anchor, skipRows }) => {
+        const normalizedAnchor = anchor.trim().toLowerCase();
+        let anchorIdx = -1;
+        for (let i = 0; i < rows.length; i++) {
+            const cellA = (rows[i][0] || '').trim().toLowerCase();
+            const cellB = (rows[i][1] || '').trim().toLowerCase();
+            if (cellA === normalizedAnchor || cellB === normalizedAnchor) {
+                anchorIdx = i;
+                break;
+            }
+        }
+        if (anchorIdx === -1) return 0;
+
+        const dataStart = anchorIdx + 1 + skipRows;
+        let count = 0;
+        for (let i = dataStart; i < rows.length; i++) {
+            const cellA = (rows[i][0] || '').trim();
+            const cellB = (rows[i][1] || '').trim();
+            if (!cellA && !cellB) break;
+            count++;
+        }
+        return count;
+    });
+}
+
+/**
+ * Manually invalidate all cached entries for a given spreadsheet.
+ * Call this after write operations to ensure fresh reads.
+ */
+export function invalidateCache(spreadsheetId?: string): void {
+    if (spreadsheetId) {
+        for (const key of serverCache.keys()) {
+            if (key.includes(spreadsheetId)) serverCache.delete(key);
+        }
+    } else {
+        serverCache.clear();
+    }
+}

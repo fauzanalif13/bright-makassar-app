@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import ThemeProvider from "@/src/components/ThemeProvider";
+import CookieConsent from "@/src/components/CookieConsent";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SISTER BRIGHT",
+  title: "Pijar Bright RO Makassar",
   description: "Sistem Informasi Bright Scholarship RO Makassar",
 };
 
@@ -45,6 +46,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ThemeProvider>
+          <CookieConsent />
           {children}
           <Toaster position="top-center" />
         </ThemeProvider>
