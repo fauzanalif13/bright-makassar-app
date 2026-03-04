@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "react-hot-toast";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import ThemeProvider from "@/src/components/ThemeProvider";
 import CookieConsent from "@/src/components/CookieConsent";
 import { LoadingProvider } from "@/src/components/LoadingProvider";
@@ -56,6 +57,7 @@ export default function RootLayout({
             <SpeedInsights />
           </LoadingProvider>
         </ThemeProvider>
+        <SpeedInsights />
       </body>
     </html>
   );
