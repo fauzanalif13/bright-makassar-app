@@ -67,10 +67,10 @@ export default function LoginPage() {
 
                         <h1 className="text-4xl font-bold text-white mb-4 leading-tight">
                             Selamat Datang di <br />
-                            <span className="text-blue-100">Sister Bright</span>
+                            <span className="text-blue-100">Pijar Bright</span>
                         </h1>
                         <p className="text-white/80 text-lg max-w-sm">
-                            Sistem Informasi Terpadu untuk memantau perkembangan Awardee Bright Scholarship YBM BRILiaN RO Makassar.
+                            Pusat Informasi Terpadu untuk memantau perkembangan Awardee Bright Scholarship YBM BRILiaN RO Makassar.
 
                         </p>
                     </div>
