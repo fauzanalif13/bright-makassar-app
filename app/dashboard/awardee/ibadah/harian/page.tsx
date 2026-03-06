@@ -237,14 +237,12 @@ export default function LaporanIbadahHarianPage() {
 
     // ── Fetch table data ──
     const fetchTableData = useCallback((forceRefresh?: boolean) => {
-        setGlobalLoading(true)
         startTableFetch(async () => {
             const result = await getIbadahMonthEntries(tableMonth, tableYear, forceRefresh === true)
             if (result.error) { toast.error(result.error); setEntries([]) }
             else if (result.data) setEntries(result.data)
-            setGlobalLoading(false)
         })
-    }, [tableMonth, tableYear, setGlobalLoading])
+    }, [tableMonth, tableYear])
 
     useEffect(() => { fetchTableData() }, [fetchTableData])
 

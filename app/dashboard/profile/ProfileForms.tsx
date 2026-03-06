@@ -13,7 +13,7 @@ import {
     Eye, EyeOff, ScrollText, Settings2, ChevronDown, CalendarDays,
     Sun, Moon, Monitor
 } from 'lucide-react'
-import { ACADEMIC_MONTHS, getFullCellRef, getDailyBlockDefault } from '@/src/lib/ibadahDefaults'
+import { ACADEMIC_MONTHS, getCellRef, getDailyBlockDefault } from '@/src/lib/ibadahDefaults'
 import { useTheme } from '@/src/components/ThemeProvider'
 
 type ProfileData = {
@@ -260,11 +260,11 @@ export default function ProfileForms({ initialData }: { initialData: ProfileData
                                                     </div>
                                                     <div>
                                                         <p className="text-[11px] text-gray-500 dark:text-slate-400 mb-3 leading-relaxed">
-                                                            Pemetaan Sel Skor Ibadah (Rerata). Otomatis divalidasi dengan Nama Sheet di atas.
+                                                            Pemetaan Sel Skor Ibadah (Rerata). Format: <code className="bg-gray-50 dark:bg-slate-700 px-1 rounded text-[10px] font-semibold">AM13</code>. Otomatis digabungkan dengan Nama Sheet saat mengambil data.
                                                         </p>
                                                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                                                             {ACADEMIC_MONTHS.map(m => {
-                                                                const defaultVal = getFullCellRef(year, m.id)
+                                                                const defaultVal = getCellRef(year, m.id)
                                                                 const value = savedY.months?.[m.id] !== undefined ? savedY.months[m.id] : defaultVal
                                                                 return (
                                                                     <Input
@@ -333,7 +333,7 @@ export default function ProfileForms({ initialData }: { initialData: ProfileData
                                                     </div>
                                                     <div>
                                                         <p className="text-[11px] text-gray-500 dark:text-slate-400 mb-3 leading-relaxed">
-                                                            Block range harian untuk sheet yang dikonfigurasi. Format: <code className="text-gray-700 dark:text-slate-300 font-semibold">G13:AK20</code>
+                                                            Block range harian untuk sheet yang dikonfigurasi. Format tanpa awalan sheet: <code className="text-gray-700 dark:text-slate-300 font-semibold">G13:AK20</code>
                                                         </p>
                                                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                                                             {ACADEMIC_MONTHS.map(m => {

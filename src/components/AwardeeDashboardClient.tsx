@@ -6,21 +6,22 @@ import {
     XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell
 } from 'recharts'
 import {
-    ChevronLeft, ChevronRight, ChevronDown, Megaphone,
-    FileText, CheckCircle2, Calendar, BookOpen, GraduationCap
+    ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Megaphone,
+    FileText, CheckCircle2, Calendar, BookOpen, GraduationCap,
+    AlertTriangle, CalendarDays, MapPin, UserCheck, Clock, Eye, EyeOff
 } from 'lucide-react'
 import { enrichTrendData, getCurrentAcademicYear } from '@/src/lib/chartHelpers'
 import type { EnrichedTrendItem } from '@/src/lib/chartHelpers'
 import IbadahComparisonChart from '@/src/components/charts/IbadahComparisonChart'
 import { useTheme } from '@/src/components/ThemeProvider'
 
-// ─── Announcements ──────────────────────────────────────────────────
-
-const ANNOUNCEMENTS = [
-    { title: 'Pengisian Laporan Harian', desc: 'Mengingatkan kepada seluruh awardee untuk rutin mengisi form laporan ibadah harian.', tag: 'Info Umum', tagColor: 'text-[#00529C] bg-blue-50 dark:text-[#60b5ff] dark:bg-[#00529C]/20', by: 'Sistem', accent: '#15A4FA', icon: FileText },
-    { title: 'Jadwal Pembinaan Rutin', desc: 'Pembinaan pekanan dilaksanakan hari Sabtu pukul 08:00 WITA. Dimohon hadir tepat waktu.', tag: 'Jadwal', tagColor: 'text-green-600 bg-green-50 dark:text-green-400 dark:bg-green-900/20', by: 'Fasilitator', accent: '#10B981', icon: CheckCircle2 },
-    { title: 'Pengumpulan Resume Buku', desc: 'Batas akhir pengumpulan resume buku bulan ini adalah tanggal 25.', tag: 'Tenggat', tagColor: 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-900/20', by: 'Fasilitator', accent: '#F59E0B', icon: Calendar },
-]
+// ─── Announcements (Replaced by Dynamic Data) ────────────────────────
+// Constant arrays removed. We map DB `tipe` dynamically.
+const TYPE_CONFIG: Record<string, { tagColor: string, accent: string, icon: any }> = {
+    'Tugas': { tagColor: 'text-red-700 bg-red-100 dark:text-red-400 dark:bg-red-900/30', accent: '#EF4444', icon: FileText },
+    'Peringatan': { tagColor: 'text-amber-700 bg-amber-100 dark:text-amber-400 dark:bg-amber-900/30', accent: '#F59E0B', icon: AlertTriangle },
+    'Info': { tagColor: 'text-[#00529C] bg-blue-100 dark:text-[#60b5ff] dark:bg-[#00529C]/30', accent: '#15A4FA', icon: Megaphone }
+}
 
 const ACHIEVEMENT_COLORS_LIGHT: Record<string, string> = {
     'Pembinaan': '#00529C', 'Prestasi': '#15A4FA', 'Organisasi': '#8B5CF6', 'Workshop': '#10B981',
@@ -40,6 +41,8 @@ type Props = {
     displayName: string
     spreadsheetConfigured: boolean
     angkatan: number
+    pengumumanData: any[]
+    jadwalData: any[]
 }
 
 const SPAN_OPTIONS = [
@@ -149,11 +152,22 @@ function SectionSkeleton() {
 // ─── Main Component ─────────────────────────────────────────────────
 
 export default function AwardeeDashboardClient({
-    displayName, spreadsheetConfigured, angkatan
+    displayName, spreadsheetConfigured, angkatan, pengumumanData, jadwalData
 }: Props) {
     const [carouselIdx, setCarouselIdx] = useState(0)
     const scrollRef = useRef<HTMLDivElement>(null)
     const { isDark } = useTheme()
+
+    const [hiddenSections, setHiddenSections] = useState({
+        pengumuman: false,
+        pembinaan: false,
+        ibadah: false,
+        pendidikan: false
+    })
+    
+    const toggleSection = (key: keyof typeof hiddenSections) => {
+        setHiddenSections(prev => ({ ...prev, [key]: !prev[key] }))
+    }
 
     // ─── Lazy-loaded data state ──────────────────────────────────────
     const [ibadahComparison, setIbadahComparison] = useState<IbadahComparisonItem[]>([])
@@ -330,7 +344,7 @@ export default function AwardeeDashboardClient({
     function scrollCarousel(dir: 'left' | 'right') {
         const next = dir === 'left'
             ? Math.max(0, carouselIdx - 1)
-            : Math.min(ANNOUNCEMENTS.length - 1, carouselIdx + 1)
+            : Math.min(pengumumanData.length - 1, carouselIdx + 1)
         setCarouselIdx(next)
         scrollRef.current?.children[next]?.scrollIntoView({
             behavior: 'smooth', inline: 'start', block: 'nearest'
@@ -365,6 +379,9 @@ export default function AwardeeDashboardClient({
                 carouselIdx={carouselIdx}
                 scrollRef={scrollRef}
                 onScroll={scrollCarousel}
+                data={pengumumanData}
+                isHidden={hiddenSections.pengumuman}
+                onToggleHide={() => toggleSection('pengumuman')}
                 onDotClick={(i) => {
                     setCarouselIdx(i)
                     scrollRef.current?.children[i]?.scrollIntoView({
@@ -373,50 +390,69 @@ export default function AwardeeDashboardClient({
                 }}
             />
 
+            {/* ─── Papan Informasi Pembinaan Bulanan ───────────────────── */}
+            <PembinaanBoard 
+                jadwalData={jadwalData} 
+                isHidden={hiddenSections.pembinaan}
+                onToggleHide={() => toggleSection('pembinaan')}
+            />
+
             {/* ─── Grafik Ibadah ──────────────────────────────────────── */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-4 lg:p-5">
-                <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+                <div className={`flex flex-wrap items-center justify-between gap-3 ${hiddenSections.ibadah ? '' : 'mb-6'}`}>
                     <div className="flex items-center gap-2.5">
                         <div className="w-9 h-9 rounded-lg bg-[#00529C]/10 dark:bg-[#00529C]/20 text-[#00529C] dark:text-[#60b5ff] flex items-center justify-center">
                             <BookOpen className="w-4 h-4" />
                         </div>
                         <div>
                             <h2 className="text-lg font-bold text-[#00529C] dark:text-[#60b5ff]">Grafik Ibadah</h2>
-                            <p className="text-xs text-gray-600 dark:text-slate-400">
-                                Timeline {angkatan} – {angkatan + 4}
-                            </p>
+                            {!hiddenSections.ibadah && (
+                                <p className="text-xs text-gray-600 dark:text-slate-400">
+                                    Timeline {angkatan} – {angkatan + 4}
+                                </p>
+                            )}
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
-                        <DropdownSelect
-                            value={selectedSpan}
-                            onChange={handleSpanChange}
-                            options={SPAN_OPTIONS}
-                        />
-                        <DropdownSelect
-                            value={selectedTahun}
-                            onChange={handleTahunChange}
-                            options={[1, 2, 3, 4].map(v => ({
-                                value: v, label: `Tahun ke-${v}`
-                            }))}
-                        />
+                        {!hiddenSections.ibadah && (
+                            <>
+                                <DropdownSelect
+                                    value={selectedSpan}
+                                    onChange={handleSpanChange}
+                                    options={SPAN_OPTIONS}
+                                />
+                                <DropdownSelect
+                                    value={selectedTahun}
+                                    onChange={handleTahunChange}
+                                    options={[1, 2, 3, 4].map(v => ({
+                                        value: v, label: `Tahun ke-${v}`
+                                    }))}
+                                />
+                                <div className="hidden sm:block w-px h-5 bg-gray-200 dark:bg-slate-700 ml-1" />
+                            </>
+                        )}
+                        <button onClick={() => toggleSection('ibadah')} className="p-1.5 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700/50">
+                            {hiddenSections.ibadah ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
+                        </button>
                     </div>
                 </div>
 
-                {ibadahLoading ? (
-                    <SectionSkeleton />
-                ) : ibadahError ? (
-                    <ErrorMessage msg="Gagal memuat data ibadah. Silakan muat ulang halaman." />
-                ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
-                        {/* Comparison Chart */}
-                        <IbadahComparisonChart
-                            angkatan={angkatan}
-                            initialComparison={ibadahComparison}
-                        />
+                {!hiddenSections.ibadah && (
+                    <>
+                        {ibadahLoading ? (
+                            <SectionSkeleton />
+                        ) : ibadahError ? (
+                            <ErrorMessage msg="Gagal memuat data ibadah. Silakan muat ulang halaman." />
+                        ) : (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
+                                {/* Comparison Chart */}
+                                <IbadahComparisonChart
+                                    angkatan={angkatan}
+                                    initialComparison={ibadahComparison}
+                                />
 
-                        {/* Scrollable Trend Timeline with Trendline */}
-                        <div className="border border-gray-100 dark:border-slate-700 rounded-xl p-4">
+                                {/* Scrollable Trend Timeline with Trendline */}
+                                <div className="border border-gray-100 dark:border-slate-700 rounded-xl p-4">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-slate-200 mb-1">
                                 Tren Skor Ibadah
                             </h3>
@@ -486,30 +522,41 @@ export default function AwardeeDashboardClient({
                                         </AreaChart>
                                     </ResponsiveContainer>
                                 </div>
-                            ) : <EmptyChart msg="Belum ada data tren." />}
+                            ) : <EmptyChart msg="Konfigurasi range Ibadah di Profil." />}
+                            </div>
                         </div>
-                    </div>
+                        )}
+                    </>
                 )}
             </div>
 
             {/* ─── Grafik Pendidikan ──────────────────────────────────── */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
-                <div className="flex items-center gap-2.5 mb-6">
-                    <div className="w-9 h-9 rounded-lg bg-[#15A4FA]/10 dark:bg-[#15A4FA]/20 text-[#15A4FA] dark:text-[#5cc8ff] flex items-center justify-center">
-                        <GraduationCap className="w-4 h-4" />
+                <div className={`flex items-center justify-between gap-3 ${hiddenSections.pendidikan ? '' : 'mb-6'}`}>
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-lg bg-[#15A4FA]/10 dark:bg-[#15A4FA]/20 text-[#15A4FA] dark:text-[#5cc8ff] flex items-center justify-center">
+                            <GraduationCap className="w-4 h-4" />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-bold text-[#00529C] dark:text-[#60b5ff]">Grafik Pendidikan</h2>
+                            {!hiddenSections.pendidikan && (
+                                <p className="text-xs text-gray-600 dark:text-slate-400">Data dari sheet Resume</p>
+                            )}
+                        </div>
                     </div>
-                    <div>
-                        <h2 className="text-lg font-bold text-[#00529C] dark:text-[#60b5ff]">Grafik Pendidikan</h2>
-                        <p className="text-xs text-gray-600 dark:text-slate-400">Data dari sheet Resume</p>
-                    </div>
+                    <button onClick={() => toggleSection('pendidikan')} className="p-1.5 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700/50">
+                        {hiddenSections.pendidikan ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
+                    </button>
                 </div>
 
-                {pendidikanLoading ? (
-                    <SectionSkeleton />
-                ) : pendidikanError ? (
-                    <ErrorMessage msg="Gagal memuat data pendidikan. Silakan muat ulang halaman." />
-                ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {!hiddenSections.pendidikan && (
+                    <>
+                        {pendidikanLoading ? (
+                            <SectionSkeleton />
+                        ) : pendidikanError ? (
+                            <ErrorMessage msg="Gagal memuat data pendidikan. Silakan muat ulang halaman." />
+                        ) : (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {/* IP & IPK */}
                         <div className="border border-gray-100 dark:border-slate-700 rounded-xl p-4">
                             <h3 className="text-sm font-semibold text-gray-800 dark:text-slate-200 mb-4">Tren IP &amp; IPK</h3>
@@ -571,7 +618,9 @@ export default function AwardeeDashboardClient({
                                 </>
                             ) : <EmptyChart msg="Konfigurasi range Pendidikan di Profil." />}
                         </div>
-                    </div>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>
@@ -610,44 +659,75 @@ function WelcomeBanner({ displayName, spreadsheetConfigured }: {
     )
 }
 
-function AnnouncementCarousel({ carouselIdx, scrollRef, onScroll, onDotClick }: {
+function AnnouncementCarousel({ carouselIdx, scrollRef, onScroll, onDotClick, data, isHidden, onToggleHide }: {
     carouselIdx: number
     scrollRef: React.RefObject<HTMLDivElement | null>
     onScroll: (dir: 'left' | 'right') => void
     onDotClick: (i: number) => void
+    data: any[]
+    isHidden: boolean
+    onToggleHide: () => void
 }) {
+    if (!data || data.length === 0) {
+        return null // Hide entirely if no data
+    }
+
     return (
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-5">
-            <div className="flex items-center justify-between mb-4">
+            <div className={`flex flex-wrap items-center justify-between gap-3 ${isHidden ? '' : 'mb-4'}`}>
                 <div className="flex items-center gap-2.5">
                     <div className="w-9 h-9 rounded-lg bg-orange-50 dark:bg-orange-500/10 text-orange-500 flex items-center justify-center">
                         <Megaphone className="w-4 h-4" />
                     </div>
-                    <h2 className="text-lg font-bold text-gray-900 dark:text-white">Himbauan Terbaru</h2>
+                    <h2 className="text-lg font-bold text-gray-900 dark:text-white">Himbauan / Tugas Terbaru</h2>
                 </div>
-                <div className="flex gap-1.5">
-                    <button onClick={() => onScroll('left')} disabled={carouselIdx === 0} className="w-8 h-8 rounded-lg border border-gray-200 dark:border-slate-600 flex items-center justify-center text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-30 transition-all">
-                        <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => onScroll('right')} disabled={carouselIdx === ANNOUNCEMENTS.length - 1} className="w-8 h-8 rounded-lg border border-gray-200 dark:border-slate-600 flex items-center justify-center text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-30 transition-all">
-                        <ChevronRight className="w-4 h-4" />
+                <div className="flex gap-1.5 items-center">
+                    {!isHidden && (
+                        <>
+                            <button onClick={() => onScroll('left')} disabled={carouselIdx === 0} className="w-8 h-8 rounded-lg border border-gray-200 dark:border-slate-600 flex items-center justify-center text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-30 transition-all">
+                                <ChevronLeft className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => onScroll('right')} disabled={carouselIdx === data.length - 1} className="w-8 h-8 rounded-lg border border-gray-200 dark:border-slate-600 flex items-center justify-center text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-30 transition-all">
+                                <ChevronRight className="w-4 h-4" />
+                            </button>
+                            <div className="hidden sm:block w-px h-5 bg-gray-200 dark:bg-slate-700 mx-1.5" />
+                        </>
+                    )}
+                    <button onClick={onToggleHide} className="p-1.5 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700/50">
+                        {isHidden ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
                     </button>
                 </div>
             </div>
-            <div ref={scrollRef} className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-1 scrollbar-minimal">
-                {ANNOUNCEMENTS.map((a, i) => {
-                    const Icon = a.icon
+            
+            {!isHidden && (
+                <>
+                    <div ref={scrollRef} className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-1 scrollbar-minimal">
+                        {data.map((a, i) => {
+                    const config = TYPE_CONFIG[a.tipe] || TYPE_CONFIG['Info']
+                    const Icon = config.icon
+                    const by = a.author?.name || 'Fasilitator'
+                    const deadline = a.tenggat_waktu 
+                        ? new Date(a.tenggat_waktu).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) 
+                        : null
+
                     return (
-                        <div key={i} className="min-w-[280px] md:min-w-[340px] snap-start border border-gray-100 dark:border-slate-700 rounded-xl p-5 bg-gray-50/50 dark:bg-slate-700/30 hover:bg-white dark:hover:bg-slate-700/60 hover:shadow-sm transition-all relative overflow-hidden flex-shrink-0">
-                            <div className="absolute top-0 right-0 w-1 h-full" style={{ backgroundColor: a.accent }} />
+                        <div key={a.id} className="min-w-[280px] md:min-w-[340px] snap-start border border-gray-100 dark:border-slate-700 rounded-xl p-5 bg-gray-50/50 dark:bg-slate-700/30 hover:bg-white dark:hover:bg-slate-700/60 hover:shadow-sm transition-all relative overflow-hidden flex-shrink-0 group">
+                            <div className="absolute top-0 right-0 w-1.5 h-full transition-all group-hover:w-2" style={{ backgroundColor: config.accent }} />
                             <div className="flex gap-3">
-                                <Icon className="w-5 h-5 shrink-0 mt-0.5" style={{ color: a.accent }} />
+                                <div className="mt-0.5 w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${config.accent}15` }}>
+                                    <Icon className="w-4 h-4" style={{ color: config.accent }} />
+                                </div>
                                 <div>
-                                    <h3 className="font-bold text-gray-900 dark:text-white text-sm mb-1">{a.title}</h3>
-                                    <p className="text-gray-600 dark:text-slate-300 text-xs leading-relaxed mb-3">{a.desc}</p>
-                                    <div className="flex items-center gap-2">
-                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${a.tagColor}`}>{a.tag}</span>
-                                        <span className="text-[10px] text-gray-500 dark:text-slate-400">Oleh: {a.by}</span>
+                                    <h3 className="font-bold text-gray-900 dark:text-white text-[13px] leading-tight mb-1.5 pr-2">{a.judul}</h3>
+                                    <p className="text-gray-600 dark:text-slate-300 text-xs leading-relaxed mb-3 line-clamp-2">{a.deskripsi}</p>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${config.tagColor}`}>{a.tipe}</span>
+                                        <span className="text-[10px] text-gray-500 dark:text-slate-400 flex items-center gap-1">Oleh: {by}</span>
+                                        {deadline && (
+                                            <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                                                <CalendarDays className="w-3 h-3" /> {deadline}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -655,15 +735,98 @@ function AnnouncementCarousel({ carouselIdx, scrollRef, onScroll, onDotClick }: 
                     )
                 })}
             </div>
-            <div className="flex justify-center gap-1.5 mt-3">
-                {ANNOUNCEMENTS.map((_, i) => (
-                    <button key={i} onClick={() => onDotClick(i)} className={`w-2 h-2 rounded-full transition-all ${i === carouselIdx ? 'bg-[#00529C] dark:bg-[#60b5ff] w-5' : 'bg-gray-300 dark:bg-slate-600'}`} />
-                ))}
-            </div>
+            {data.length > 1 && (
+                <div className="flex justify-center gap-1.5 mt-3">
+                    {data.map((_, i) => (
+                        <button key={i} onClick={() => onDotClick(i)} className={`w-2 h-2 rounded-full transition-all ${i === carouselIdx ? 'bg-[#00529C] dark:bg-[#60b5ff] w-5' : 'bg-gray-300 dark:bg-slate-600'}`} />
+                    ))}
+                </div>
+            )}
+                </>
+            )}
         </div>
     )
 }
 
+function PembinaanBoard({ jadwalData, isHidden, onToggleHide }: { jadwalData: any[], isHidden: boolean, onToggleHide: () => void }) {
+    return (
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-5">
+            <div className={`flex flex-wrap items-center justify-between gap-3 ${isHidden ? '' : 'mb-4'}`}>
+                <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-lg bg-[#00529C]/10 dark:bg-[#00529C]/20 text-[#00529C] dark:text-[#60b5ff] flex items-center justify-center">
+                        <CalendarDays className="w-4 h-4" />
+                    </div>
+                    <div>
+                        <h2 className="text-lg font-bold text-gray-900 dark:text-white">Papan Informasi Pembinaan</h2>
+                    </div>
+                </div>
+                <div className="flex gap-1.5 items-center">
+                    <button onClick={onToggleHide} className="p-1.5 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700/50">
+                        {isHidden ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
+                    </button>
+                </div>
+            </div>
+
+            {!isHidden && (
+                <>
+                    {!jadwalData || jadwalData.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-6 text-center">
+                            <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-slate-700 flex items-center justify-center mb-2">
+                                <CheckCircle2 className="w-4 h-4 text-[#15A4FA] opacity-60" />
+                            </div>
+                            <h3 className="text-gray-900 dark:text-white font-bold text-sm mb-1">Semua Selesai</h3>
+                            <p className="text-gray-500 dark:text-slate-400 text-xs">Tidak ada jadwal pembinaan untuk waktu dekat.</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {jadwalData.map((j) => {
+                                const eventDate = new Date(j.tanggal_waktu)
+                                eventDate.setHours(0, 0, 0, 0)
+                                const today = new Date()
+                                today.setHours(0, 0, 0, 0)
+                                const diffDays = Math.round((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+                                
+                                let HBadge = null;
+                                if (diffDays === 0) {
+                                    HBadge = <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm animate-pulse flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> HARI INI</span>
+                                } else if (diffDays <= 3 && diffDays > 0) {
+                                    HBadge = <span className="bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm">H-{diffDays}</span>
+                                } else if (diffDays > 3) {
+                                    HBadge = <span className="bg-[#15A4FA] text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm">H-{diffDays}</span>
+                                }
+
+                                return (
+                                    <div key={j.id} className="border border-gray-100 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-700/30 rounded-xl p-4 hover:shadow-sm hover:bg-white dark:hover:bg-slate-700/60 transition-all flex flex-col justify-between">
+                                        <div>
+                                            <div className="flex justify-between items-start mb-2.5 gap-2">
+                                                <h3 className="font-bold text-gray-900 dark:text-white text-sm line-clamp-2">{j.judul_materi}</h3>
+                                                <div className="shrink-0">{HBadge}</div>
+                                            </div>
+                                            <div className="space-y-2 mb-3">
+                                                <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-slate-300">
+                                                    <Clock className="w-3.5 h-3.5 text-[#15A4FA]" />
+                                                    <span>{new Date(j.tanggal_waktu).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })} • {new Date(j.tanggal_waktu).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WITA</span>
+                                                </div>
+                                                <div className="flex items-start gap-2 text-xs text-gray-600 dark:text-slate-300">
+                                                    <MapPin className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                                                    <span className="line-clamp-2" title={j.lokasi_atau_link}>{j.lokasi_atau_link}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-[11px] font-medium text-gray-500 dark:text-slate-400 bg-white dark:bg-slate-800 p-2.5 rounded-lg border border-gray-50 dark:border-slate-700/50">
+                                            <UserCheck className="w-3.5 h-3.5 text-[#00529C] dark:text-[#60b5ff]" />
+                                            <span className="truncate">Pemateri: {j.narasumber}</span>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    )}
+                </>
+            )}
+        </div>
+    )
+}
 function DropdownSelect({ value, onChange, options }: {
     value: number
     onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void

@@ -22,11 +22,31 @@ export default async function AwardeeDashboard() {
     const spreadsheetId = userData?.spreadsheet_id || ''
     const angkatan = userData?.angkatan ? parseInt(String(userData.angkatan)) : new Date().getFullYear()
 
+    // Fetch Himbauan / Tugas Terbaru (latest 5 active, matching angkatan or Semua Angkatan)
+    const { data: rawPengumuman } = await supabase
+        .from('pengumuman')
+        .select('*')
+        .or(`angkatan.eq.Semua Angkatan,angkatan.eq.${angkatan}`)
+        .order('created_at', { ascending: false })
+        .limit(5)
+
+    // Fetch Jadwal Pembinaan (Upcoming, matching angkatan or Semua Angkatan)
+    // We fetch all non-'Selesai' schedules to avoid Strict UTC timezone issues, or simply fetch recent ones and filter on the client.
+    // For now, let's fetch where status is 'Akan Datang'.
+    const { data: rawJadwal } = await supabase
+        .from('jadwal_pembinaan')
+        .select('*')
+        .eq('status', 'Akan Datang')
+        .or(`angkatan.eq.Semua Angkatan,angkatan.eq.${angkatan}`)
+        .order('tanggal_waktu', { ascending: true })
+
     return (
         <AwardeeDashboardClient
             displayName={displayName}
             spreadsheetConfigured={!!spreadsheetId}
             angkatan={angkatan}
+            pengumumanData={rawPengumuman || []}
+            jadwalData={rawJadwal || []}
         />
     )
 }

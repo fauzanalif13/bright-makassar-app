@@ -138,10 +138,28 @@ function resolveMonthGrid(
     const yearCfg = harianConfig?.[yk]
     const monthRange = yearCfg?.months?.[monthId]
     if (monthRange && monthRange.trim()) {
-        return { sheetName, blockRange: monthRange.trim() }
+        const parsedInput = monthRange.trim()
+        let parsedSheetName = sheetName
+        let parsedBlockRange = parsedInput
+
+        if (parsedInput.includes('!')) {
+            const parts = parsedInput.split('!')
+            parsedSheetName = parts[0].replace(/'/g, '')
+            parsedBlockRange = parts[1]
+        }
+        return { sheetName: parsedSheetName, blockRange: parsedBlockRange }
     }
 
-    // Fall back to default computed range
+    // Try computing from explicit bulanan config if available
+    const explicitBulananCell = bulananConfig?.[yk]?.months?.[monthId]
+    if (explicitBulananCell && explicitBulananCell.trim()) {
+        const parsed = parseDailyBlockRange(explicitBulananCell.trim())
+        if (parsed && parsed.block) {
+            return { sheetName, blockRange: parsed.block }
+        }
+    }
+
+    // Fall back to complete default computed range
     const defaultBlock = getDailyBlockDefault(yearNum, monthId)
     if (defaultBlock) {
         return { sheetName, blockRange: defaultBlock }
@@ -152,7 +170,9 @@ function resolveMonthGrid(
 
 /** Parse a block range string like "G13:AK20" into start col, end col, start row */
 function parseBlockRange(blockRange: string): { startCol: number; endCol: number; startRow: number } | null {
-    const match = blockRange.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/)
+    // Just in case a sheet name sneaked in, strip it
+    const rangeOnly = blockRange.includes('!') ? blockRange.split('!')[1] : blockRange
+    const match = rangeOnly.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/)
     if (!match) return null
 
     function colToIndex(col: string): number {
@@ -215,16 +235,6 @@ export async function getIbadahMonthEntries(month: number, year: number, forceRe
 
         for (let dayIdx = 0; dayIdx < numDays; dayIdx++) {
             const day = dayIdx + 1
-            // Check if any activity has data for this day
-            let hasData = false
-            for (let actIdx = 0; actIdx < 8; actIdx++) {
-                const val = rows[actIdx]?.[dayIdx]
-                if (val !== undefined && val !== null && String(val).trim() !== '') {
-                    hasData = true
-                    break
-                }
-            }
-            if (!hasData) continue
 
             entries.push({
                 day,

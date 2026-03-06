@@ -240,8 +240,16 @@ export type DailyBlockResult = {
  *   // → { block: "G23:AK30", rows: ["G23:AK23", "G24:AK24", ...], activities: [...] }
  */
 export function parseDailyBlockRange(monthlyCell: string): DailyBlockResult | null {
-    // Strip any sheet prefix like "'Tahun ke-1'!" if present
-    const cellOnly = monthlyCell.includes('!') ? monthlyCell.split('!')[1] : monthlyCell
+    // Extract sheet name and cell reference, handling formats like "'Tahun ke-1'!AM13"
+    let sheetName = ''
+    let cellOnly = monthlyCell
+
+    if (monthlyCell.includes('!')) {
+        const parts = monthlyCell.split('!')
+        sheetName = parts[0]
+        cellOnly = parts[1]
+    }
+
     const parsed = parseCell(cellOnly)
     if (!parsed) return null
 
@@ -261,8 +269,10 @@ export function parseDailyBlockRange(monthlyCell: string): DailyBlockResult | nu
         return `${startCol}${rowNum}:${endCol}${rowNum}`
     })
 
+    const blockRef = `${startCol}${startRow}:${endCol}${endRow}`
+
     return {
-        block: `${startCol}${startRow}:${endCol}${endRow}`,
+        block: sheetName ? `${sheetName}!${blockRef}` : blockRef,
         rows,
         activities: DAILY_ACTIVITIES,
     }

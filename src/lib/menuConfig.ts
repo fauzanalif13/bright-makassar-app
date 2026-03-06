@@ -57,10 +57,10 @@ export const menuConfig: Record<string, MenuItem[]> = {
                 {
                     title: 'BRIGHT Scholarship',
                     submenu: [
-                        { title: 'Buat pengumuman', path: '/dashboard/fasilitator/pendidikan/bright/pengumuman' },
-                        { title: 'Buat jadwal pembinaan', path: '/dashboard/fasilitator/pendidikan/bright/jadwal' },
-                        { title: 'Tugas pembinaan', path: '/dashboard/fasilitator/pendidikan/bright/tugas' },
-                    ],
+                        { title: 'Buat Pengumuman', path: '/dashboard/fasilitator/pengumuman' },
+                        { title: 'Buat Jadwal Pembinaan', path: '/dashboard/fasilitator/pembinaan' },
+                        { title: 'Buat Pesan Khusus', path: '/dashboard/fasilitator/pesan' },
+                    ]
                 },
             ],
         },

@@ -6,7 +6,7 @@ import CookieConsent from "@/src/components/CookieConsent";
 import { LoadingProvider } from "@/src/components/LoadingProvider";
 import "./globals.css";
 //Speed Insights Vercel
-import { SpeedInsights } from "@vercel/speed-insights/next"
+// import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -53,7 +53,7 @@ export default function RootLayout({
             <CookieConsent />
             {children}
             <Toaster position="top-center" />
-            <SpeedInsights />
+            {/* <SpeedInsights /> */}
           </LoadingProvider>
         </ThemeProvider>
       </body>
