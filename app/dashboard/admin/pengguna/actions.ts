@@ -35,8 +35,12 @@ type BatchResult = {
 
 async function requireAdmin() {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Unauthorized')
+    const { data: { user }, error } = await supabase.auth.getUser()
+    
+    // Supabase auth.getUser() returns an error on refresh token failure
+    if (error || !user) {
+        throw new Error('AUTH_ERROR')
+    }
 
     const { data } = await supabase
         .from('roles_pengguna')
@@ -44,7 +48,7 @@ async function requireAdmin() {
         .eq('email', user.email)
         .single()
 
-    if (data?.role !== 'admin') throw new Error('Forbidden: Admin only')
+    if (data?.role !== 'admin') throw new Error('FORBIDDEN')
     return supabase
 }
 
@@ -66,7 +70,11 @@ export async function fetchAwardeeUsers(): Promise<PenggunaRow[]> {
 // ─── Create Single User ───────────────────────────────────────────────
 
 export async function createSingleUser(formData: FormData): Promise<ActionResult> {
-    await requireAdmin()
+    try {
+        await requireAdmin()
+    } catch (e: any) {
+        return { error: e.message === 'AUTH_ERROR' ? 'Sesi berakhir, silakan muat ulang halaman' : 'Akses ditolak' }
+    }
     const adminSupabase = createAdminClient()
 
     const name = (formData.get('name') as string)?.trim()
@@ -130,7 +138,7 @@ export async function createBatchUsers(
     users: { name: string; email: string; password: string; spreadsheet_url?: string }[],
     sharedData: { angkatan: string; gender: string; batch: string }
 ): Promise<BatchResult> {
-    await requireAdmin()
+    try { await requireAdmin() } catch { return { total: users.length, created: 0, failed: users.length, errors: ['Sesi berakhir, silakan muat ulang halaman'] } }
     const adminSupabase = createAdminClient()
 
     const result: BatchResult = { total: users.length, created: 0, failed: 0, errors: [] }
@@ -192,7 +200,8 @@ export async function createBatchUsers(
 // ─── Update User ──────────────────────────────────────────────────────
 
 export async function updateUser(id: number, formData: FormData): Promise<ActionResult> {
-    const supabase = await requireAdmin()
+    let supabase;
+    try { supabase = await requireAdmin() } catch { return { error: 'Sesi berakhir, silakan muat ulang halaman' } }
     const adminSupabase = createAdminClient()
 
     const name = (formData.get('name') as string)?.trim()
@@ -239,7 +248,7 @@ export async function updateUser(id: number, formData: FormData): Promise<Action
 // ─── Reset Password ───────────────────────────────────────────────────
 
 export async function resetUserPassword(id: number, newPassword: string): Promise<ActionResult> {
-    await requireAdmin()
+    try { await requireAdmin() } catch { return { error: 'Sesi berakhir, silakan muat ulang halaman' } }
     const adminSupabase = createAdminClient()
     const supabase = await createClient()
 
@@ -269,7 +278,8 @@ export async function resetUserPassword(id: number, newPassword: string): Promis
 // ─── Delete User ──────────────────────────────────────────────────────
 
 export async function deleteUser(id: number): Promise<ActionResult> {
-    const supabase = await requireAdmin()
+    let supabase;
+    try { supabase = await requireAdmin() } catch { return { error: 'Sesi berakhir, silakan muat ulang halaman' } }
     const adminSupabase = createAdminClient()
 
     // Get the auth_uid first
@@ -299,7 +309,8 @@ export async function deleteUser(id: number): Promise<ActionResult> {
 // ─── Toggle Single User Status ────────────────────────────────────────
 
 export async function toggleUserStatus(id: number, newStatus: string): Promise<ActionResult> {
-    const supabase = await requireAdmin()
+    let supabase;
+    try { supabase = await requireAdmin() } catch { return { error: 'Sesi berakhir, silakan muat ulang halaman' } }
 
     const { error } = await supabase
         .from('roles_pengguna')
@@ -315,7 +326,8 @@ export async function toggleUserStatus(id: number, newStatus: string): Promise<A
 // ─── Toggle Batch Status ──────────────────────────────────────────────
 
 export async function toggleBatchStatus(angkatan: string, newStatus: string): Promise<ActionResult> {
-    const supabase = await requireAdmin()
+    let supabase;
+    try { supabase = await requireAdmin() } catch { return { error: 'Sesi berakhir, silakan muat ulang halaman' } }
 
     const { error, count } = await supabase
         .from('roles_pengguna')
@@ -345,7 +357,7 @@ export async function fetchFasilitatorUsers(): Promise<PenggunaRow[]> {
 }
 
 export async function createSingleFasilitator(formData: FormData): Promise<ActionResult> {
-    await requireAdmin()
+    try { await requireAdmin() } catch { return { error: 'Sesi berakhir, silakan muat ulang halaman' } }
     const adminSupabase = createAdminClient()
 
     const name = (formData.get('name') as string)?.trim()
@@ -390,7 +402,7 @@ export async function createBatchFasilitators(
     users: { name: string; email: string; password: string }[],
     sharedData: { angkatan: string; gender: string; batch: string }
 ): Promise<BatchResult> {
-    await requireAdmin()
+    try { await requireAdmin() } catch { return { total: users.length, created: 0, failed: users.length, errors: ['Sesi berakhir, silakan muat ulang halaman'] } }
     const adminSupabase = createAdminClient()
     const result: BatchResult = { total: users.length, created: 0, failed: 0, errors: [] }
 
@@ -435,7 +447,8 @@ export async function createBatchFasilitators(
 }
 
 export async function updateFasilitator(id: number, formData: FormData): Promise<ActionResult> {
-    const supabase = await requireAdmin()
+    let supabase;
+    try { supabase = await requireAdmin() } catch { return { error: 'Sesi berakhir, silakan muat ulang halaman' } }
     const adminSupabase = createAdminClient()
 
     const name = (formData.get('name') as string)?.trim()
@@ -466,7 +479,8 @@ export async function updateFasilitator(id: number, formData: FormData): Promise
 }
 
 export async function toggleFasilitatorBatchStatus(angkatan: string, newStatus: string): Promise<ActionResult> {
-    const supabase = await requireAdmin()
+    let supabase;
+    try { supabase = await requireAdmin() } catch { return { error: 'Sesi berakhir, silakan muat ulang halaman' } }
     const { error } = await supabase.from('roles_pengguna').update({ status: newStatus }).eq('role', 'fasilitator').eq('angkatan', angkatan)
     if (error) return { error: 'Gagal mengubah status batch: ' + error.message }
     revalidatePath('/dashboard/admin/pengguna/fasilitator')
