@@ -30,10 +30,17 @@ export async function uploadAvatarAction(formData: FormData) {
     const fileName = `${user.id}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`
     const filePath = `public/${fileName}`
 
+    // Convert file to Buffer to ensure compatibility with Supabase storage in Node.js
+    const arrayBuffer = await file.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+
     // 1. Upload to Supabase Storage Bucket 'avatars'
     const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file, { upsert: true })
+        .upload(filePath, buffer, { 
+            upsert: true,
+            contentType: file.type
+        })
 
     if (uploadError) {
         return { error: 'Gagal mengunggah gambar: ' + uploadError.message }

@@ -106,14 +106,18 @@ export async function appendDataToSheet(
  */
 export async function getSheetData(
     spreadsheetId: string,
-    range: string
+    range: string,
+    bypassCache: boolean = false
 ): Promise<string[][]> {
     purgeStale();
     const cacheKey = `sheet:${spreadsheetId}:${range}`;
-    const cached = getCached<string[][]>(cacheKey);
-    if (cached) {
-        console.log(`[getSheetData] Cache HIT: ${range}`);
-        return cached;
+    
+    if (!bypassCache) {
+        const cached = getCached<string[][]>(cacheKey);
+        if (cached) {
+            console.log(`[getSheetData] Cache HIT: ${range}`);
+            return cached;
+        }
     }
 
     const result = await withRetry(async () => {

@@ -1,6 +1,6 @@
 'use server'
 
-import { getIbadahMonthlyAverage, getIbadahDailyData, IBADAH_ACTIVITIES } from '@/src/lib/googleSheets'
+import { getIbadahMonthlyAverage, getIbadahDailyData, IBADAH_ACTIVITIES, getSheetData, countMultipleTableRows } from '@/src/lib/googleSheets'
 import type { IbadahActivity } from '@/src/lib/googleSheets'
 import { createClient } from '@/src/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
@@ -46,6 +46,158 @@ export async function getAwardeeChartData(
     })
 
     return { monthly, daily }
+}
+
+// ─── Rekapan Angkatan Actions ─────────────────────────────────────────────
+
+export type RekapanAngkatanResult = {
+    name: string
+    ibadahScore: number
+    ipk: number
+    prestasiOrganisasiCount: number
+}
+
+export async function getActiveBatches() {
+    const supabase = await createClient()
+    const { data, error } = await supabase
+        .from('roles_pengguna')
+        .select('angkatan')
+        .eq('role', 'awardee')
+        .not('angkatan', 'is', null)
+
+    if (error) {
+        console.error('Failed to get active batches:', error)
+        return []
+    }
+
+    // Get unique non-null angkatan
+    const uniqueBatches = Array.from(new Set(data.filter(d => d.angkatan).map(d => d.angkatan as string)))
+    uniqueBatches.sort((a, b) => b.localeCompare(a)) // Sort descending
+    
+    return uniqueBatches.map(angkatan => {
+        // Assume format is like "2022" -> BS 8 (2014 was BS 0? No, 2014 is BS 1 -> Wait, in pengumuman it says `BS ${parseInt(entry.angkatan) - 2014}`)
+        const year = parseInt(angkatan)
+        const label = !isNaN(year) ? `BS ${year - 2014} (${angkatan})` : angkatan
+        return { label, value: angkatan }
+    })
+}
+
+export async function getRekapanAngkatanData(filters: { angkatan: string, month: number, year: number }): Promise<RekapanAngkatanResult[]> {
+    const supabase = await createClient()
+    
+    let query = supabase
+        .from('roles_pengguna')
+        .select('name, spreadsheet_id, sheet_config')
+        .eq('role', 'awardee')
+        .eq('status', 'aktif')
+
+    if (filters.angkatan && filters.angkatan !== 'Semua Angkatan') {
+        query = query.eq('angkatan', filters.angkatan)
+    }
+
+    const { data: awardees, error } = await query
+    
+    if (error) {
+        console.error('Failed to get awardees for Rekapan Angkatan:', error)
+        return []
+    }
+
+    if (!awardees || awardees.length === 0) return []
+
+    // Fetch data for each awardee concurrently using Promise.allSettled
+    const results = await Promise.allSettled(
+        awardees.filter(a => a.spreadsheet_id).map(async (awardee) => {
+            const config = (awardee.sheet_config as any) || {}
+            
+            // 1. Fetch Ibadah
+            let ibadahScore = 0
+            try {
+                const sheetName = config.ibadah_sheet || config.ibadah_sheet_name || 'LaporanIbadah'
+                const avg = await getIbadahMonthlyAverage(awardee.spreadsheet_id!, sheetName, filters.month, filters.year)
+                
+                let sum = 0
+                let count = 0
+                for (const activity of IBADAH_ACTIVITIES) {
+                    sum += avg[activity] || 0
+                    count++
+                }
+                ibadahScore = count > 0 ? Math.round(sum / count) : 0
+            } catch (e) {
+                console.error(`Failed to fetch Ibadah for ${awardee.name}:`, e)
+            }
+
+            // 2. Fetch IPK
+            let ipk = 0
+            try {
+                if (config.ip_ipk_range) {
+                    const rows = await getSheetData(awardee.spreadsheet_id!, config.ip_ipk_range)
+                    if (rows.length > 0) {
+                        const ipRow = rows[0] || []
+                        let cumulativeIp = 0
+                        let ipCount = 0
+                        for (let s = 0; s < 8; s++) {
+                            const rawIp = ipRow[s] || ''
+                            const ip = parseFloat(String(rawIp).replace(',', '.')) || 0
+                            if (ip > 0) {
+                                cumulativeIp += ip
+                                ipCount++
+                                ipk = Number((cumulativeIp / ipCount).toFixed(2))
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error(`Failed to fetch IPK for ${awardee.name}:`, e)
+            }
+
+            // 3. Fetch Prestasi & Organisasi Count
+            let prestasiOrganisasiCount = 0
+            try {
+                const resumeSheet = config.resume_sheet || 'Resume'
+                const counts = await countMultipleTableRows(awardee.spreadsheet_id!, resumeSheet, [
+                    { anchor: 'Riwayat Prestasi', skipRows: 2 },
+                    { anchor: 'Riwayat Organisasi', skipRows: 2 },
+                ])
+                prestasiOrganisasiCount = counts[0] + counts[1]
+                
+                // Fallback if anchor finds 0
+                if (prestasiOrganisasiCount === 0) {
+                     async function countRowsFallback(range: string | undefined): Promise<number> {
+                        if (!range) return 0
+                        try {
+                            const rows = await getSheetData(awardee.spreadsheet_id!, range)
+                            return rows.filter((r: any) => r[0]?.trim()).length
+                        } catch { return 0 }
+                    }
+                    const [prestasiFallback, organisasiFallback] = await Promise.all([
+                        countRowsFallback(config.prestasi_range),
+                        countRowsFallback(config.organisasi_range)
+                    ])
+                    prestasiOrganisasiCount = prestasiFallback + organisasiFallback
+                }
+            } catch (e) {
+                console.error(`Failed to fetch Achievements for ${awardee.name}:`, e)
+            }
+
+            return {
+                name: awardee.name || 'Tanpa Nama',
+                ibadahScore,
+                ipk,
+                prestasiOrganisasiCount
+            }
+        })
+    )
+
+    // Filter successful results
+    const successfulResults: RekapanAngkatanResult[] = []
+    results.forEach(result => {
+        if (result.status === 'fulfilled') {
+            successfulResults.push(result.value)
+        }
+    })
+
+    // Sort alphabetically by name
+    return successfulResults.sort((a, b) => a.name.localeCompare(b.name))
 }
 
 // ─── Pengumuman Actions ─────────────────────────────────────────────

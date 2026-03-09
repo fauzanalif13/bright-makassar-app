@@ -14,6 +14,7 @@ import { enrichTrendData, getCurrentAcademicYear } from '@/src/lib/chartHelpers'
 import type { EnrichedTrendItem } from '@/src/lib/chartHelpers'
 import IbadahComparisonChart from '@/src/components/charts/IbadahComparisonChart'
 import { useTheme } from '@/src/components/ThemeProvider'
+import AchievementBoard from '@/src/components/AchievementBoard'
 
 // ─── Announcements (Replaced by Dynamic Data) ────────────────────────
 // Constant arrays removed. We map DB `tipe` dynamically.
@@ -162,7 +163,8 @@ export default function AwardeeDashboardClient({
         pengumuman: false,
         pembinaan: false,
         ibadah: false,
-        pendidikan: false
+        pendidikan: false,
+        achievement: false
     })
     
     const toggleSection = (key: keyof typeof hiddenSections) => {
@@ -374,29 +376,42 @@ export default function AwardeeDashboardClient({
                 spreadsheetConfigured={spreadsheetConfigured}
             />
 
-            {/* ─── Announcements Carousel ─────────────────────────────── */}
-            <AnnouncementCarousel
-                carouselIdx={carouselIdx}
-                scrollRef={scrollRef}
-                onScroll={scrollCarousel}
-                data={pengumumanData}
-                isHidden={hiddenSections.pengumuman}
-                onToggleHide={() => toggleSection('pengumuman')}
-                onDotClick={(i) => {
-                    setCarouselIdx(i)
-                    scrollRef.current?.children[i]?.scrollIntoView({
-                        behavior: 'smooth', inline: 'start', block: 'nearest'
-                    })
-                }}
-            />
+            {/* ─── Top Dashboard Grid ─────────────────────────────────── */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Left Column (Pembinaan & Announcements) */}
+                <div className="lg:col-span-2 space-y-6 flex flex-col">
+                    <PembinaanBoard 
+                        jadwalData={jadwalData} 
+                        isHidden={hiddenSections.pembinaan}
+                        onToggleHide={() => toggleSection('pembinaan')}
+                    />
 
-            {/* ─── Papan Informasi Pembinaan Bulanan ───────────────────── */}
-            <PembinaanBoard 
-                jadwalData={jadwalData} 
-                isHidden={hiddenSections.pembinaan}
-                onToggleHide={() => toggleSection('pembinaan')}
-            />
+                    <AnnouncementCarousel
+                        carouselIdx={carouselIdx}
+                        scrollRef={scrollRef}
+                        onScroll={scrollCarousel}
+                        data={pengumumanData}
+                        isHidden={hiddenSections.pengumuman}
+                        onToggleHide={() => toggleSection('pengumuman')}
+                        onDotClick={(i) => {
+                            setCarouselIdx(i)
+                            scrollRef.current?.children[i]?.scrollIntoView({
+                                behavior: 'smooth', inline: 'start', block: 'nearest'
+                            })
+                        }}
+                    />
+                </div>
 
+                {/* Right Column (Achievement Board) */}
+                <div className="lg:col-span-1 relative">
+                    <div className="h-full lg:absolute lg:inset-0 w-full">
+                        <AchievementBoard 
+                            isHidden={hiddenSections.achievement}
+                            onToggleHide={() => toggleSection('achievement')}
+                        />
+                    </div>
+                </div>
+            </div>
             {/* ─── Grafik Ibadah ──────────────────────────────────────── */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-4 lg:p-5">
                 <div className={`flex flex-wrap items-center justify-between gap-3 ${hiddenSections.ibadah ? '' : 'mb-6'}`}>

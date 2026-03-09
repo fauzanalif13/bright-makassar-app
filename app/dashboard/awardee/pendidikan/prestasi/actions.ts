@@ -12,6 +12,14 @@ const COL = { TANGGAL: 1, PRESTASI: 2, PENYELENGGARA: 6, LEVEL: 9 } as const
 
 export type PrestasiEntry = { rowIndex: number; tanggal: string; daftarPrestasi: string; penyelenggara: string; level: string }
 
+const BULAN_INDONESIA = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
+
+function formatIndonesianDate(dateStr: string) {
+    if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+    const [year, month, day] = dateStr.split('-');
+    return `${parseInt(day)} ${BULAN_INDONESIA[parseInt(month) - 1]} ${year}`;
+}
+
 function getSheet(cfg: Record<string, any> | null) { return cfg?.resume_sheet || DEFAULT_RESUME_SHEET }
 
 export async function getPrestasiEntries(forceRefresh = false): Promise<{ data?: PrestasiEntry[]; error?: string }> {
@@ -49,7 +57,8 @@ export async function addPrestasiEntry(formData: FormData): Promise<{ success?: 
         if (authError || !user) return { error: 'Sesi kedaluwarsa.' }
         const { data: u } = await supabase.from('roles_pengguna').select('spreadsheet_id, sheet_config').eq('email', user.email).single()
         if (!u?.spreadsheet_id) return { error: 'Spreadsheet belum dikonfigurasi.' }
-        const tanggal = (formData.get('tanggal') as string)?.trim()
+        const rawTanggal = (formData.get('tanggal') as string)?.trim() || ''
+        const tanggal = formatIndonesianDate(rawTanggal)
         const daftarPrestasi = (formData.get('daftarPrestasi') as string)?.trim()
         const penyelenggara = (formData.get('penyelenggara') as string)?.trim() || ''
         const level = (formData.get('level') as string)?.trim() || ''
@@ -93,7 +102,7 @@ export async function updatePrestasiEntry(formData: FormData): Promise<{ success
         if (!ri || isNaN(ri)) return { error: 'Row index tidak valid.' }
         const ref = `'${getSheet(u.sheet_config as any)}'`
         await Promise.all([
-            updateSheetRow(u.spreadsheet_id, `${ref}!B${ri}`, [[(formData.get('tanggal') as string)?.trim() || '']]),
+            updateSheetRow(u.spreadsheet_id, `${ref}!B${ri}`, [[formatIndonesianDate((formData.get('tanggal') as string)?.trim() || '')]]),
             updateSheetRow(u.spreadsheet_id, `${ref}!C${ri}`, [[(formData.get('daftarPrestasi') as string)?.trim() || '']]),
             updateSheetRow(u.spreadsheet_id, `${ref}!G${ri}`, [[(formData.get('penyelenggara') as string)?.trim() || '']]),
             updateSheetRow(u.spreadsheet_id, `${ref}!J${ri}`, [[(formData.get('level') as string)?.trim() || '']]),

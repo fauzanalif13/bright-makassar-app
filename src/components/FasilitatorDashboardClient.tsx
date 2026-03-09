@@ -7,7 +7,8 @@ import { AwardeeIbadahMonthlyChart, AwardeeIbadahDailyChart } from '@/src/compon
 import type { IbadahMonthlyChartData, IbadahDailyChartData } from '@/src/components/charts/AwardeeCharts'
 import { getAwardeeChartData } from '@/app/dashboard/fasilitator/actions'
 import type { AwardeeChartResult } from '@/app/dashboard/fasilitator/actions'
-import { Users, User, Loader2, ChevronDown, BarChart3, Eye } from 'lucide-react'
+import { Users, User, Loader2, ChevronDown, BarChart3, Eye, Target } from 'lucide-react'
+import RekapanAngkatan from '@/src/components/charts/RekapanAngkatan'
 
 type AwardeeInfo = {
     name: string
@@ -22,7 +23,7 @@ type Props = {
 }
 
 export default function FasilitatorDashboardClient({ displayName, aggregatedData, awardees }: Props) {
-    const [activeTab, setActiveTab] = useState<'rekapan' | 'individu'>('rekapan')
+    const [activeTab, setActiveTab] = useState<'sorotan-umum' | 'rekapan-angkatan' | 'individu'>('sorotan-umum')
     const [selectedAwardee, setSelectedAwardee] = useState<string>('')
     const [individualData, setIndividualData] = useState<AwardeeChartResult | null>(null)
     const [isPending, startTransition] = useTransition()
@@ -58,20 +59,30 @@ export default function FasilitatorDashboardClient({ displayName, aggregatedData
             </div>
 
             {/* Tab Switcher */}
-            <div className="flex gap-2 bg-gray-100 dark:bg-slate-800 p-1.5 rounded-2xl w-fit">
+            <div className="flex gap-2 bg-gray-100 dark:bg-slate-800 p-1.5 rounded-2xl w-fit overflow-x-auto max-w-full">
                 <button
-                    onClick={() => setActiveTab('rekapan')}
-                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'rekapan'
+                    onClick={() => setActiveTab('sorotan-umum')}
+                    className={`flex items-center whitespace-nowrap gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'sorotan-umum'
                             ? 'bg-white dark:bg-slate-700 text-[#00529C] dark:text-[#60b5ff] shadow-sm'
                             : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
                         }`}
                 >
                     <BarChart3 className="w-4 h-4" />
-                    Rekapan
+                    Sorotan Umum
+                </button>
+                <button
+                    onClick={() => setActiveTab('rekapan-angkatan')}
+                    className={`flex items-center whitespace-nowrap gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'rekapan-angkatan'
+                            ? 'bg-white dark:bg-slate-700 text-[#00529C] dark:text-[#60b5ff] shadow-sm'
+                            : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
+                        }`}
+                >
+                    <Target className="w-4 h-4" />
+                    Rekapan Angkatan
                 </button>
                 <button
                     onClick={() => setActiveTab('individu')}
-                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'individu'
+                    className={`flex items-center whitespace-nowrap gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'individu'
                             ? 'bg-white dark:bg-slate-700 text-[#00529C] dark:text-[#60b5ff] shadow-sm'
                             : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
                         }`}
@@ -81,8 +92,8 @@ export default function FasilitatorDashboardClient({ displayName, aggregatedData
                 </button>
             </div>
 
-            {/* ─── Rekapan Tab ───────────────────────────────────────────── */}
-            {activeTab === 'rekapan' && (
+            {/* ─── Sorotan Umum Tab ───────────────────────────────────────────── */}
+            {activeTab === 'sorotan-umum' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700 p-8">
                         <div className="flex justify-between items-center mb-6">
@@ -125,6 +136,11 @@ export default function FasilitatorDashboardClient({ displayName, aggregatedData
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* ─── Rekapan Angkatan Tab ────────────────────────────────────── */}
+            {activeTab === 'rekapan-angkatan' && (
+                <RekapanAngkatan />
             )}
 
             {/* ─── Individu Tab ──────────────────────────────────────────── */}
