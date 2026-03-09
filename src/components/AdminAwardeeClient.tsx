@@ -86,8 +86,8 @@ export default function AdminAwardeeClient({ initialUsers, batchOptions, univOpt
                 u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q)
             )
         }
-        if (filterBatch) result = result.filter(u => u.angkatan === filterBatch)
-        if (filterStatus) result = result.filter(u => u.status === filterStatus)
+        if (filterBatch) result = result.filter(u => String(u.angkatan) === String(filterBatch))
+        if (filterStatus) result = result.filter(u => String(u.status) === String(filterStatus))
         return result
     }, [users, search, filterBatch, filterStatus])
 
