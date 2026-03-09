@@ -12,7 +12,7 @@ export default async function ProfilePage() {
 
     const { data: userData } = await supabase
         .from('roles_pengguna')
-        .select('name, spreadsheet_id, sheet_config')
+        .select('name, spreadsheet_id, sheet_config, role')
         .eq('email', user.email)
         .single()
 
@@ -22,6 +22,7 @@ export default async function ProfilePage() {
         avatar_url: user.user_metadata?.avatar_url || '',
         spreadsheet_id: userData?.spreadsheet_id || '',
         sheet_config: (userData?.sheet_config as Record<string, string> | null) || null,
+        role: userData?.role || '',
     }
 
     return (

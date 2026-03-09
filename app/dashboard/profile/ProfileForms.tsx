@@ -22,6 +22,7 @@ type ProfileData = {
     avatar_url: string
     spreadsheet_id: string
     sheet_config: Record<string, unknown> | null
+    role: string
 }
 
 const TABS = [
@@ -101,7 +102,7 @@ export default function ProfileForms({ initialData }: { initialData: ProfileData
         <div className="space-y-6">
             {/* Tab Bar */}
             <div className="flex gap-1 bg-gray-100 dark:bg-slate-800 p-1 rounded-xl overflow-x-auto">
-                {TABS.map(tab => {
+                {TABS.filter(t => initialData.role === 'awardee' || t.key === 'umum').map(tab => {
                     const Icon = tab.icon
                     return (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key)}
@@ -174,18 +175,20 @@ export default function ProfileForms({ initialData }: { initialData: ProfileData
                             </form>
                         </Card>
 
-                        <Card icon={<Link2 className="w-4 h-4 text-[#00529C] dark:text-[#60b5ff]" />} title="Konfigurasi Spreadsheet">
-                            <form onSubmit={(e) => handleForm(updateSpreadsheetAction, setSavingSpreadsheet, e)} className="space-y-4">
-                                <div>
-                                    <Input id="spreadsheetUrl" name="spreadsheetUrl" label="URL Google Spreadsheet" type="url" defaultValue={spreadsheetDisplayUrl} placeholder="https://docs.google.com/spreadsheets/d/.../edit" />
-                                    <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-1.5">Tempelkan link lengkap. ID akan diekstrak otomatis.</p>
-                                    {initialData.spreadsheet_id && (
-                                        <p className="text-[11px] text-green-600 dark:text-green-400 font-medium mt-1">✅ ID: <code className="bg-green-50 dark:bg-green-900/30 px-1 rounded text-[10px]">{initialData.spreadsheet_id}</code></p>
-                                    )}
-                                </div>
-                                <SubmitBtn loading={savingSpreadsheet} label="Simpan Spreadsheet" />
-                            </form>
-                        </Card>
+                        {initialData.role === 'awardee' && (
+                            <Card icon={<Link2 className="w-4 h-4 text-[#00529C] dark:text-[#60b5ff]" />} title="Konfigurasi Spreadsheet">
+                                <form onSubmit={(e) => handleForm(updateSpreadsheetAction, setSavingSpreadsheet, e)} className="space-y-4">
+                                    <div>
+                                        <Input id="spreadsheetUrl" name="spreadsheetUrl" label="URL Google Spreadsheet" type="url" defaultValue={spreadsheetDisplayUrl} placeholder="https://docs.google.com/spreadsheets/d/.../edit" />
+                                        <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-1.5">Tempelkan link lengkap. ID akan diekstrak otomatis.</p>
+                                        {initialData.spreadsheet_id && (
+                                            <p className="text-[11px] text-green-600 dark:text-green-400 font-medium mt-1">✅ ID: <code className="bg-green-50 dark:bg-green-900/30 px-1 rounded text-[10px]">{initialData.spreadsheet_id}</code></p>
+                                        )}
+                                    </div>
+                                    <SubmitBtn loading={savingSpreadsheet} label="Simpan Spreadsheet" />
+                                </form>
+                            </Card>
+                        )}
 
                         <Card icon={<KeyRound className="w-4 h-4 text-[#00529C] dark:text-[#60b5ff]" />} title="Ubah Password">
                             <form onSubmit={(e) => handleForm(updatePasswordAction, setSavingPassword, e, true)} className="space-y-4">
