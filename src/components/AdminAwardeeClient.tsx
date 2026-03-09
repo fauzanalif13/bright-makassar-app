@@ -43,11 +43,10 @@ function formatBatchAngkatan(batch: string | null, angkatan: string | null): str
     return '—'
 }
 
-// ─── Types ─────────────────────────────────────────────────────────────
-
 type Props = {
     initialUsers: PenggunaRow[]
     batchOptions: string[]
+    univOptions: string[]
 }
 
 type BatchUserRow = {
@@ -55,11 +54,13 @@ type BatchUserRow = {
     email: string
     password: string
     spreadsheet_url: string
+    asal_univ: string
+    is_custom_univ?: boolean
 }
 
 // ─── Main Component ────────────────────────────────────────────────────
 
-export default function AdminAwardeeClient({ initialUsers, batchOptions }: Props) {
+export default function AdminAwardeeClient({ initialUsers, batchOptions, univOptions }: Props) {
     const [users, setUsers] = useState<PenggunaRow[]>(initialUsers)
     const [search, setSearch] = useState('')
     const [filterBatch, setFilterBatch] = useState('')
@@ -380,6 +381,7 @@ export default function AdminAwardeeClient({ initialUsers, batchOptions }: Props
                         setShowAddModal(false)
                         refreshAll()
                     }}
+                    univOptions={univOptions}
                 />
             )}
 
@@ -390,6 +392,7 @@ export default function AdminAwardeeClient({ initialUsers, batchOptions }: Props
                         setShowBatchModal(false)
                         refreshAll()
                     }}
+                    univOptions={univOptions}
                 />
             )}
 
@@ -401,6 +404,7 @@ export default function AdminAwardeeClient({ initialUsers, batchOptions }: Props
                         setUsers(prev => prev.map(u => u.id === updated.id ? updated : u))
                         setEditingUser(null)
                     }}
+                    univOptions={univOptions}
                 />
             )}
 
@@ -450,12 +454,62 @@ export default function AdminAwardeeClient({ initialUsers, batchOptions }: Props
 const inputCls = "w-full px-4 py-3 bg-gray-50 dark:bg-slate-900/60 border border-gray-200 dark:border-slate-700/60 rounded-xl text-sm focus:ring-2 focus:ring-[#15A4FA]/30 focus:border-[#15A4FA] dark:focus:border-[#60b5ff] outline-none text-gray-800 dark:text-slate-200 placeholder:text-gray-400 dark:placeholder:text-slate-500 transition-all"
 const labelCls = "block text-sm font-bold text-gray-700 dark:text-slate-300 mb-1.5"
 
+function UniversitasSelect({ options, defaultValue = '' }: { options: string[], defaultValue?: string }) {
+    const [isCustom, setIsCustom] = useState(false)
+    const [val, setVal] = useState(defaultValue)
+
+    return (
+        <div className="flex flex-col gap-2">
+            {!isCustom ? (
+                <select
+                    name={!isCustom ? "asal_univ" : ""}
+                    value={val}
+                    onChange={(e) => {
+                        if (e.target.value === 'ADD_NEW') {
+                            setIsCustom(true)
+                            setVal('')
+                        } else {
+                            setVal(e.target.value)
+                        }
+                    }}
+                    className={inputCls + ' cursor-pointer'}
+                >
+                    <option value="">Pilih Universitas</option>
+                    {options.map(o => (
+                        <option key={o} value={o}>{o}</option>
+                    ))}
+                    <option value="ADD_NEW" className="font-bold text-[#00529C]">+ Univ baru</option>
+                </select>
+            ) : (
+                <div className="flex items-center gap-2">
+                    <input
+                        autoFocus
+                        name="asal_univ"
+                        value={val}
+                        onChange={e => setVal(e.target.value)}
+                        placeholder="Ketik nama universitas baru..."
+                        className={inputCls}
+                    />
+                    <button
+                        type="button"
+                        onClick={() => { setIsCustom(false); setVal('') }}
+                        className="p-3 bg-gray-100 dark:bg-slate-800/60 hover:bg-gray-200 dark:hover:bg-slate-700/60 border border-gray-200 dark:border-slate-700/60 rounded-xl transition-colors shrink-0"
+                        title="Batal"
+                    >
+                        <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                    </button>
+                </div>
+            )}
+        </div>
+    )
+}
+
 
 // ═══════════════════════════════════════════════════════════════════════
 // MODAL: Add Single User
 // ═══════════════════════════════════════════════════════════════════════
 
-function AddUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+function AddUserModal({ onClose, onCreated, univOptions }: { onClose: () => void; onCreated: () => void; univOptions: string[] }) {
     const [isPending, startTransition] = useTransition()
     const [error, setError] = useState('')
     const [batchVal, setBatchVal] = useState('')
@@ -528,6 +582,10 @@ function AddUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
                     </select>
                 </div>
                 <div>
+                    <label className={labelCls}>Universitas</label>
+                    <UniversitasSelect options={univOptions} />
+                </div>
+                <div>
                     <label className={labelCls}>Spreadsheet URL</label>
                     <input name="spreadsheet_url" className={inputCls} placeholder="https://docs.google.com/spreadsheets/d/..." />
                     <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">Opsional. Bisa ditambahkan nanti oleh awardee di profil.</p>
@@ -544,11 +602,11 @@ function AddUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
 // MODAL: Add Batch Users
 // ═══════════════════════════════════════════════════════════════════════
 
-function BatchUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+function BatchUserModal({ onClose, onCreated, univOptions }: { onClose: () => void; onCreated: () => void; univOptions: string[] }) {
     const [rows, setRows] = useState<BatchUserRow[]>([
-        { name: '', email: '', password: '', spreadsheet_url: '' },
-        { name: '', email: '', password: '', spreadsheet_url: '' },
-        { name: '', email: '', password: '', spreadsheet_url: '' },
+        { name: '', email: '', password: '', spreadsheet_url: '', asal_univ: '' },
+        { name: '', email: '', password: '', spreadsheet_url: '', asal_univ: '' },
+        { name: '', email: '', password: '', spreadsheet_url: '', asal_univ: '' },
     ])
     const [sharedBatch, setSharedBatch] = useState('')
     const [sharedAngkatan, setSharedAngkatan] = useState('')
@@ -572,7 +630,7 @@ function BatchUserModal({ onClose, onCreated }: { onClose: () => void; onCreated
     function updateRow(i: number, field: keyof BatchUserRow, value: string) {
         setRows(prev => prev.map((r, idx) => idx === i ? { ...r, [field]: value } : r))
     }
-    function addRow() { setRows(prev => [...prev, { name: '', email: '', password: '', spreadsheet_url: '' }]) }
+    function addRow() { setRows(prev => [...prev, { name: '', email: '', password: '', spreadsheet_url: '', asal_univ: '' }]) }
     function removeRow(i: number) { if (rows.length > 1) setRows(prev => prev.filter((_, idx) => idx !== i)) }
 
     function handleSubmit(e: React.FormEvent) {
@@ -642,10 +700,37 @@ function BatchUserModal({ onClose, onCreated }: { onClose: () => void; onCreated
                     {rows.map((row, i) => (
                         <div key={i} className="flex items-start gap-2">
                             <span className="mt-2.5 text-xs font-bold text-gray-400 dark:text-slate-600 w-5 shrink-0 text-right">{i + 1}</span>
-                            <div className="flex-1 grid grid-cols-4 gap-2">
+                            <div className="flex-1 grid grid-cols-5 gap-2">
                                 <input value={row.name} onChange={e => updateRow(i, 'name', e.target.value)} className={inputCls} placeholder="Nama" />
                                 <input value={row.email} onChange={e => updateRow(i, 'email', e.target.value)} type="email" className={inputCls} placeholder="Email" />
                                 <input value={row.password} onChange={e => updateRow(i, 'password', e.target.value)} type="password" className={inputCls} placeholder="Password" />
+                                
+                                {row.is_custom_univ ? (
+                                    <div className="relative flex items-center">
+                                        <input value={row.asal_univ} onChange={e => updateRow(i, 'asal_univ', e.target.value)} className={inputCls} placeholder="Ketik univ baru..." autoFocus />
+                                        <button type="button" onClick={() => { updateRow(i, 'is_custom_univ', false as any); updateRow(i, 'asal_univ', ''); }} className="absolute right-2 p-1 text-gray-400 hover:text-red-500 bg-white dark:bg-slate-800 rounded-md">
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <select 
+                                        value={row.asal_univ} 
+                                        onChange={e => {
+                                            if (e.target.value === 'ADD_NEW') {
+                                                updateRow(i, 'is_custom_univ', true as any)
+                                                updateRow(i, 'asal_univ', '')
+                                            } else {
+                                                updateRow(i, 'asal_univ', e.target.value)
+                                            }
+                                        }} 
+                                        className={inputCls + ' px-2 text-xs font-medium cursor-pointer'}
+                                    >
+                                        <option value="">Pilih Univ</option>
+                                        {univOptions.map(o => <option key={o} value={o} className="truncate max-w-[150px]">{o}</option>)}
+                                        <option value="ADD_NEW" className="font-bold text-[#00529C]">+ Univ Baru</option>
+                                    </select>
+                                )}
+
                                 <input value={row.spreadsheet_url} onChange={e => updateRow(i, 'spreadsheet_url', e.target.value)} type="text" className={inputCls} placeholder="Spreadsheet URL" />
                             </div>
                             <button type="button" onClick={() => removeRow(i)} disabled={rows.length <= 1} className="mt-2 p-1 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-30">
@@ -666,7 +751,7 @@ function BatchUserModal({ onClose, onCreated }: { onClose: () => void; onCreated
 // MODAL: Edit User
 // ═══════════════════════════════════════════════════════════════════════
 
-function EditUserModal({ user, onClose, onUpdated }: { user: PenggunaRow; onClose: () => void; onUpdated: (u: PenggunaRow) => void }) {
+function EditUserModal({ user, onClose, onUpdated, univOptions }: { user: PenggunaRow; onClose: () => void; onUpdated: (u: PenggunaRow) => void; univOptions: string[] }) {
     const [isPending, startTransition] = useTransition()
     const [error, setError] = useState('')
     const [batchVal, setBatchVal] = useState(user.batch || '')
@@ -700,6 +785,7 @@ function EditUserModal({ user, onClose, onUpdated }: { user: PenggunaRow; onClos
                     angkatan: formData.get('angkatan') as string || null,
                     gender: formData.get('gender') as string || null,
                     batch: formData.get('batch') as string || null,
+                    asal_univ: formData.get('asal_univ') as string || null,
                     spreadsheet_id: (formData.get('spreadsheet_url') as string)?.trim() ? 'linked' : user.spreadsheet_id,
                 })
             }
@@ -746,6 +832,10 @@ function EditUserModal({ user, onClose, onUpdated }: { user: PenggunaRow; onClos
                         <option value="Putra">Putra</option>
                         <option value="Putri">Putri</option>
                     </select>
+                </div>
+                <div>
+                    <label className={labelCls}>Universitas</label>
+                    <UniversitasSelect options={univOptions} defaultValue={user.asal_univ || ''} />
                 </div>
                 <div>
                     <label className={labelCls}>Spreadsheet URL</label>

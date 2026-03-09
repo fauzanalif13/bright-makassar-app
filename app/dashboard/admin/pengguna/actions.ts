@@ -17,6 +17,7 @@ export type PenggunaRow = {
     status: string
     spreadsheet_id: string | null
     auth_uid: string | null
+    asal_univ?: string | null
 }
 
 type ActionResult = {
@@ -83,6 +84,7 @@ export async function createSingleUser(formData: FormData): Promise<ActionResult
     const angkatan = (formData.get('angkatan') as string)?.trim() || null
     const gender = (formData.get('gender') as string)?.trim() || null
     const batch = (formData.get('batch') as string)?.trim() || null
+    const asal_univ = (formData.get('asal_univ') as string)?.trim() || null
     const spreadsheetUrl = (formData.get('spreadsheet_url') as string)?.trim() || ''
     const spreadsheet_id = extractSpreadsheetId(spreadsheetUrl)
 
@@ -117,6 +119,7 @@ export async function createSingleUser(formData: FormData): Promise<ActionResult
             angkatan,
             gender,
             batch,
+            asal_univ,
             status: 'aktif',
             auth_uid: authData.user.id,
             spreadsheet_id: spreadsheet_id || null,
@@ -135,7 +138,7 @@ export async function createSingleUser(formData: FormData): Promise<ActionResult
 // ─── Create Batch Users ───────────────────────────────────────────────
 
 export async function createBatchUsers(
-    users: { name: string; email: string; password: string; spreadsheet_url?: string }[],
+    users: { name: string; email: string; password: string; spreadsheet_url?: string; asal_univ?: string }[],
     sharedData: { angkatan: string; gender: string; batch: string }
 ): Promise<BatchResult> {
     try { await requireAdmin() } catch { return { total: users.length, created: 0, failed: users.length, errors: ['Sesi berakhir, silakan muat ulang halaman'] } }
@@ -178,6 +181,7 @@ export async function createBatchUsers(
                 angkatan: sharedData.angkatan || null,
                 gender: sharedData.gender || null,
                 batch: sharedData.batch || null,
+                asal_univ: u.asal_univ || null,
                 status: 'aktif',
                 auth_uid: authData.user.id,
                 spreadsheet_id: spreadsheet_id || null,
@@ -209,6 +213,7 @@ export async function updateUser(id: number, formData: FormData): Promise<Action
     const angkatan = (formData.get('angkatan') as string)?.trim() || null
     const gender = (formData.get('gender') as string)?.trim() || null
     const batch = (formData.get('batch') as string)?.trim() || null
+    const asal_univ = (formData.get('asal_univ') as string)?.trim() || null
     const spreadsheetUrl = (formData.get('spreadsheet_url') as string)?.trim() || ''
     const spreadsheet_id = extractSpreadsheetId(spreadsheetUrl)
 
@@ -230,7 +235,7 @@ export async function updateUser(id: number, formData: FormData): Promise<Action
         if (authEmailError) return { error: 'Gagal mengubah email di Auth: ' + authEmailError.message }
     }
 
-    const updatePayload: Record<string, unknown> = { name, angkatan, gender, batch }
+    const updatePayload: Record<string, unknown> = { name, angkatan, gender, batch, asal_univ }
     if (newEmail && newEmail !== currentUser?.email) updatePayload.email = newEmail
     if (spreadsheet_id !== undefined) updatePayload.spreadsheet_id = spreadsheet_id || null
 

@@ -30,10 +30,20 @@ export default async function AdminAwardeePage() {
         new Set(users.map(u => u.angkatan).filter(Boolean) as string[])
     ).sort((a, b) => b.localeCompare(a))
 
+    // Extract distinct universitas values for dropdown
+    const univOptions = Array.from(
+        new Set([
+            'Universitas Hasanuddin', 
+            'UIN Alauddin Makassar',
+            ...(users.map(u => u.asal_univ).filter(Boolean) as string[])
+        ])
+    ).sort((a, b) => a.localeCompare(b))
+
     return (
         <AdminAwardeeClient
             initialUsers={users}
             batchOptions={batchOptions}
+            univOptions={univOptions}
         />
     )
 }
