@@ -7,7 +7,7 @@ import { revalidatePath } from 'next/cache'
 
 export type AwardeeChartResult = {
     monthly: { aktivitas: string; skor: number }[]
-    daily: { day: number;  [key: string]: number }[]
+    daily: { day: number;[key: string]: number }[]
 }
 
 export async function getAwardeeChartData(
@@ -33,8 +33,8 @@ export async function getAwardeeChartData(
     }))
 
     // Transform daily data for line chart
-    const daily: { day: number; [key: string]: number }[] = dailyRows.map((row) => {
-        const entry: { day: number; [key: string]: number } = { day: row.day }
+    const daily: { day: number;[key: string]: number }[] = dailyRows.map((row) => {
+        const entry: { day: number;[key: string]: number } = { day: row.day }
         for (const activity of IBADAH_ACTIVITIES) {
             // Use display names matching AwardeeCharts keys
             const displayName = activity
@@ -72,8 +72,8 @@ export async function getActiveBatches() {
 
     // Get unique non-null angkatan
     const uniqueBatches = Array.from(new Set(data.filter(d => d.angkatan).map(d => d.angkatan as string)))
-    uniqueBatches.sort((a, b) => b.localeCompare(a)) // Sort descending
-    
+    uniqueBatches.sort((a, b) => String(b).localeCompare(String(a))) // Sort descending
+
     return uniqueBatches.map(angkatan => {
         // Assume format is like "2022" -> BS 8 (2014 was BS 0? No, 2014 is BS 1 -> Wait, in pengumuman it says `BS ${parseInt(entry.angkatan) - 2014}`)
         const year = parseInt(angkatan)
@@ -84,7 +84,7 @@ export async function getActiveBatches() {
 
 export async function getRekapanAngkatanData(filters: { angkatan: string, month: number, year: number }): Promise<RekapanAngkatanResult[]> {
     const supabase = await createClient()
-    
+
     let query = supabase
         .from('roles_pengguna')
         .select('name, spreadsheet_id, sheet_config')
@@ -96,7 +96,7 @@ export async function getRekapanAngkatanData(filters: { angkatan: string, month:
     }
 
     const { data: awardees, error } = await query
-    
+
     if (error) {
         console.error('Failed to get awardees for Rekapan Angkatan:', error)
         return []
@@ -108,13 +108,13 @@ export async function getRekapanAngkatanData(filters: { angkatan: string, month:
     const results = await Promise.allSettled(
         awardees.filter(a => a.spreadsheet_id).map(async (awardee) => {
             const config = (awardee.sheet_config as any) || {}
-            
+
             // 1. Fetch Ibadah
             let ibadahScore = 0
             try {
                 const sheetName = config.ibadah_sheet || config.ibadah_sheet_name || 'LaporanIbadah'
                 const avg = await getIbadahMonthlyAverage(awardee.spreadsheet_id!, sheetName, filters.month, filters.year)
-                
+
                 let sum = 0
                 let count = 0
                 for (const activity of IBADAH_ACTIVITIES) {
@@ -159,10 +159,10 @@ export async function getRekapanAngkatanData(filters: { angkatan: string, month:
                     { anchor: 'Riwayat Organisasi', skipRows: 2 },
                 ])
                 prestasiOrganisasiCount = counts[0] + counts[1]
-                
+
                 // Fallback if anchor finds 0
                 if (prestasiOrganisasiCount === 0) {
-                     async function countRowsFallback(range: string | undefined): Promise<number> {
+                    async function countRowsFallback(range: string | undefined): Promise<number> {
                         if (!range) return 0
                         try {
                             const rows = await getSheetData(awardee.spreadsheet_id!, range)
@@ -197,7 +197,7 @@ export async function getRekapanAngkatanData(filters: { angkatan: string, month:
     })
 
     // Sort alphabetically by name
-    return successfulResults.sort((a, b) => a.name.localeCompare(b.name))
+    return successfulResults.sort((a, b) => String(a.name).localeCompare(String(b.name)))
 }
 
 // ─── Pengumuman Actions ─────────────────────────────────────────────
@@ -208,7 +208,7 @@ export async function getPengumuman() {
         .from('pengumuman')
         .select(`*`)
         .order('created_at', { ascending: false })
-    
+
     if (error) throw new Error(error.message)
     return data
 }
@@ -278,7 +278,7 @@ export async function getJadwalPembinaan() {
         .from('jadwal_pembinaan')
         .select(`*`)
         .order('tanggal_waktu', { ascending: true })
-    
+
     if (error) throw new Error(error.message)
     return data
 }
