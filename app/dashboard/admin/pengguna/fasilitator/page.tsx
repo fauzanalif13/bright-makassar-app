@@ -28,7 +28,7 @@ export default async function AdminFasilitatorPage() {
     // Extract distinct angkatan values for filter dropdown
     const batchOptions = Array.from(
         new Set(users.map(u => u.angkatan).filter(Boolean) as string[])
-    ).sort((a, b) => b.localeCompare(a))
+    ).sort((a, b) => String(b).localeCompare(String(a)))
 
     return (
         <AdminFasilitatorClient

@@ -8,7 +8,7 @@ import { getCellRef, getCategoryCellRefs, CALENDAR_TO_ACADEMIC, calendarToAcadem
 
 export type AwardeeChartResult = {
     monthly: { aktivitas: string; skor: number }[]
-    daily: { day: number;  [key: string]: number }[]
+    daily: { day: number;[key: string]: number }[]
 }
 
 export async function getAwardeeChartData(
@@ -39,8 +39,8 @@ export async function getAwardeeChartData(
     }))
 
     // Transform daily data for line chart
-    const daily: { day: number; [key: string]: number }[] = dailyRows.map((row) => {
-        const entry: { day: number; [key: string]: number } = { day: row.day }
+    const daily: { day: number;[key: string]: number }[] = dailyRows.map((row) => {
+        const entry: { day: number;[key: string]: number } = { day: row.day }
         for (const activity of IBADAH_ACTIVITIES) {
             // Use display names matching AwardeeCharts keys
             const displayName = activity
@@ -77,7 +77,7 @@ export async function getActiveBatches() {
     }
 
     // Get unique non-null angkatan
-    const uniqueBatches = Array.from(new Set(data.filter(d => d.angkatan).map(d => String(d.angkatan))))
+    const uniqueBatches = Array.from(new Set(data.filter(d => d.angkatan).map(d => d.angkatan as string)))
     uniqueBatches.sort((a, b) => b.localeCompare(a)) // Sort descending
     
     return uniqueBatches.map(angkatan => {
@@ -143,20 +143,36 @@ export type IndividualFullResult = {
 export async function getRekapLaporanData(filters: { angkatan: string, month: number, year: number }): Promise<RekapLaporanResult> {
     const supabase = await createClient()
     
-    let query = supabase.from('roles_pengguna').select('name, spreadsheet_id, sheet_config, angkatan').eq('role', 'awardee').eq('status', 'aktif')
-    if (filters.angkatan && filters.angkatan !== 'Semua Angkatan') query = query.eq('angkatan', filters.angkatan)
+    let query = supabase
+        .from('roles_pengguna')
+        .select('name, spreadsheet_id, sheet_config')
+        .eq('role', 'awardee')
+        .eq('status', 'aktif')
+
+    if (filters.angkatan && filters.angkatan !== 'Semua Angkatan') {
+        query = query.eq('angkatan', filters.angkatan)
+    }
 
     const { data: awardees, error } = await query
-    if (error || !awardees || awardees.length === 0) return { awardees: [], summary: { totalAwardees: 0, avgIbadah: 0, avgIpk: 0, totalPrestasi: 0, totalOrganisasi: 0 } }
+    
+    if (error) {
+        console.error('Failed to get awardees for Rekapan Angkatan:', error)
+        return []
+    }
 
+    if (!awardees || awardees.length === 0) return []
+
+    // Fetch data for each awardee concurrently using Promise.allSettled
     const results = await Promise.allSettled(
         awardees.filter(a => a.spreadsheet_id).map(async (awardee) => {
             const config = (awardee.sheet_config as any) || {}
             
-            // 1. Fetch Ibadah (using Hotfix 7 manual daily array accumulation)
+            // 1. Fetch Ibadah
             let ibadahScore = 0
             try {
-                const gridRes = await getIbadahMonthEntriesFromGrid(awardee.spreadsheet_id!, config, awardee.angkatan, filters.month, filters.year)
+                const sheetName = config.ibadah_sheet || config.ibadah_sheet_name || 'LaporanIbadah'
+                const avg = await getIbadahMonthlyAverage(awardee.spreadsheet_id!, sheetName, filters.month, filters.year)
+                
                 let sum = 0
                 let count = 0
                 if (gridRes.data && gridRes.data.length > 0) {
@@ -232,11 +248,11 @@ export async function getRekapLaporanData(filters: { angkatan: string, month: nu
                     { anchor: 'Riwayat Prestasi', skipRows: 2 },
                     { anchor: 'Riwayat Organisasi', skipRows: 2 },
                 ])
-                prestasiCount = counts[0]
-                organisasiCount = counts[1]
+                prestasiOrganisasiCount = counts[0] + counts[1]
                 
-                if (prestasiCount === 0 && organisasiCount === 0) {
-                     async function countFallback(range: string | undefined) {
+                // Fallback if anchor finds 0
+                if (prestasiOrganisasiCount === 0) {
+                     async function countRowsFallback(range: string | undefined): Promise<number> {
                         if (!range) return 0
                         try {
                             const rows = await getSheetData(awardee.spreadsheet_id!, range)
@@ -401,106 +417,13 @@ export async function getIndividualFullData(spreadsheetId: string, sheetConfig: 
             prestasiCount = await countFallback(sheetConfig.prestasi_range)
             organisasiCount = await countFallback(sheetConfig.organisasi_range)
         }
-        
-        achievements = [
-            { type: 'Prestasi', count: prestasiCount },
-            { type: 'Organisasi', count: organisasiCount }
-        ]
-    } catch {}
-
-    return { ibadah: { monthly: ibadahMonthly, daily: ibadahDaily }, ipIpk, achievements }
-}
-
-    export async function getKabarBaruFeed(filters: { sortOrder: string, angkatan: string, gender: string, page: number, pageSize: number }): Promise<{items: KabarBaruItem[], hasMore: boolean}> {
-    const supabase = await createClient()
-    const { sortOrder, angkatan, gender, page, pageSize } = filters
-    
-    // 1. Fetch Pengumuman
-    let pQuery = supabase.from('pengumuman').select('id, judul, deskripsi, created_at, angkatan, tipe')
-    if (angkatan && angkatan !== 'Semua') pQuery = pQuery.eq('angkatan', angkatan)
-    const { data: pengumuman } = await pQuery
-
-    // 2. Fetch Pembinaan
-    let bQuery = supabase.from('jadwal_pembinaan').select('id, judul_materi, deskripsi:lokasi_atau_link, created_at:tanggal_waktu, angkatan, status')
-    if (angkatan && angkatan !== 'Semua') bQuery = bQuery.eq('angkatan', angkatan)
-    const { data: pembinaan } = await bQuery
-    
-    let feed: KabarBaruItem[] = []
-    
-    // Add pengumuman
-    if (pengumuman) {
-        feed.push(...pengumuman.map(p => ({
-            id: `p_${p.id}`,
-            type: 'pengumuman' as const,
-            title: String(p.judul),
-            content: String(p.deskripsi),
-            date: String(p.created_at),
-            batch: String(p.angkatan),
-            tipe: String(p.tipe),
-        })))
-    }
-    
-    // Add pembinaan
-    if (pembinaan) {
-        feed.push(...pembinaan.map(b => ({
-            id: `b_${b.id}`,
-            type: 'pembinaan' as const,
-            title: String(b.judul_materi),
-            content: String(b.deskripsi),
-            date: String(b.created_at),
-            batch: String(b.angkatan),
-            status: String(b.status),
-        })))
-    }
-    
-    // 3. Fetch Prestasi from sheets (Hotfix 1)
-    if (page === 0) {
-        let userQuery = supabase.from('roles_pengguna').select('name, spreadsheet_id, sheet_config, angkatan, gender').eq('role', 'awardee').eq('status', 'aktif')
-        if (angkatan && angkatan !== 'Semua') userQuery = userQuery.eq('angkatan', angkatan)
-        if (gender && gender !== 'Semua') userQuery = userQuery.eq('gender', gender)
-        const { data: awardees } = await userQuery
-        
-        if (awardees) {
-            await Promise.allSettled(awardees.filter(a => a.spreadsheet_id).slice(0, 10).map(async a => {
-                const config = (a.sheet_config as any) || {}
-                const titleRange = config.prestasi_range || 'Resume!B10:B20'
-                try {
-                    const rows = await getSheetData(a.spreadsheet_id!, titleRange)
-                    if (rows && rows.length > 0) {
-                        rows.forEach((r, i) => {
-                            if (r[0] && String(r[0]).trim()) {
-                                feed.push({
-                                    id: `ach_${a.spreadsheet_id}_${i}`,
-                                    type: 'prestasi',
-                                    title: `${a.name} meraih prestasi: ${r[0]}`,
-                                    date: new Date().toISOString(),
-                                    batch: String(a.angkatan),
-                                    author: String(a.name),
-                                    gender: String(a.gender)
-                                })
-                            }
-                        })
-                    }
-                } catch (e) {}
-            }))
-        }
-    }
-    
-    // Sort
-    feed.sort((a, b) => {
-        const da = new Date(a.date).getTime()
-        const db = new Date(b.date).getTime()
-        return sortOrder === 'newest' ? db - da : da - db
     })
-    
-    // Paginate
-    const start = page * pageSize
-    const end = start + pageSize
-    const paginated = feed.slice(start, end)
-    const hasMore = end < feed.length
-    
-    return { items: paginated, hasMore }
+
+    // Sort alphabetically by name
+    return successfulResults.sort((a, b) => a.name.localeCompare(b.name))
 }
+
+// ─── Pengumuman Actions ─────────────────────────────────────────────
 
 export async function getPengumuman() {
     const supabase = await createClient()
@@ -508,7 +431,7 @@ export async function getPengumuman() {
         .from('pengumuman')
         .select(`*`)
         .order('created_at', { ascending: false })
-    
+
     if (error) throw new Error(error.message)
     return data
 }
@@ -578,7 +501,7 @@ export async function getJadwalPembinaan() {
         .from('jadwal_pembinaan')
         .select(`*`)
         .order('tanggal_waktu', { ascending: true })
-    
+
     if (error) throw new Error(error.message)
     return data
 }

@@ -28,16 +28,16 @@ export default async function AdminAwardeePage() {
     // Extract distinct angkatan values for filter dropdown
     const batchOptions = Array.from(
         new Set(users.map(u => u.angkatan).filter(Boolean) as string[])
-    ).sort((a, b) => b.localeCompare(a))
+    ).sort((a, b) => String(b).localeCompare(String(a)))
 
     // Extract distinct universitas values for dropdown
     const univOptions = Array.from(
         new Set([
-            'Universitas Hasanuddin', 
+            'Universitas Hasanuddin',
             'UIN Alauddin Makassar',
             ...(users.map(u => u.asal_univ).filter(Boolean) as string[])
         ])
-    ).sort((a, b) => a.localeCompare(b))
+    ).sort((a, b) => String(a).localeCompare(String(b)))
 
     return (
         <AdminAwardeeClient

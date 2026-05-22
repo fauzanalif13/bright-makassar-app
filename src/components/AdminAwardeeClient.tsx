@@ -86,8 +86,8 @@ export default function AdminAwardeeClient({ initialUsers, batchOptions, univOpt
                 u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q)
             )
         }
-        if (filterBatch) result = result.filter(u => u.angkatan === filterBatch)
-        if (filterStatus) result = result.filter(u => u.status === filterStatus)
+        if (filterBatch) result = result.filter(u => String(u.angkatan) === String(filterBatch))
+        if (filterStatus) result = result.filter(u => String(u.status) === String(filterStatus))
         return result
     }, [users, search, filterBatch, filterStatus])
 
@@ -101,7 +101,7 @@ export default function AdminAwardeeClient({ initialUsers, batchOptions, univOpt
             if (!cur.batch && u.batch) cur.batch = u.batch
             map.set(key, cur)
         })
-        return Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]))
+        return Array.from(map.entries()).sort((a, b) => String(b[0]).localeCompare(String(a[0])))
     }, [users])
 
     // ─── Handlers ──────────────────────────────────────────────────────
@@ -703,7 +703,7 @@ function BatchUserModal({ onClose, onCreated, univOptions }: { onClose: () => vo
                                 <input value={row.name} onChange={e => updateRow(i, 'name', e.target.value)} className={inputCls} placeholder="Nama" />
                                 <input value={row.email} onChange={e => updateRow(i, 'email', e.target.value)} type="email" className={inputCls} placeholder="Email" />
                                 <input value={row.password} onChange={e => updateRow(i, 'password', e.target.value)} type="password" className={inputCls} placeholder="Password" />
-                                
+
                                 {row.is_custom_univ ? (
                                     <div className="relative flex items-center">
                                         <input value={row.asal_univ} onChange={e => updateRow(i, 'asal_univ', e.target.value)} className={inputCls} placeholder="Ketik univ baru..." autoFocus />
@@ -712,8 +712,8 @@ function BatchUserModal({ onClose, onCreated, univOptions }: { onClose: () => vo
                                         </button>
                                     </div>
                                 ) : (
-                                    <select 
-                                        value={row.asal_univ} 
+                                    <select
+                                        value={row.asal_univ}
                                         onChange={e => {
                                             if (e.target.value === 'ADD_NEW') {
                                                 updateRow(i, 'is_custom_univ', true as any)
@@ -721,7 +721,7 @@ function BatchUserModal({ onClose, onCreated, univOptions }: { onClose: () => vo
                                             } else {
                                                 updateRow(i, 'asal_univ', e.target.value)
                                             }
-                                        }} 
+                                        }}
                                         className={inputCls + ' px-2 text-xs font-medium cursor-pointer'}
                                     >
                                         <option value="">Pilih Univ</option>
