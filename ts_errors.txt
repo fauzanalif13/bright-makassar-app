@@ -1,0 +1,27 @@
+app/dashboard/fasilitator/actions.ts(315,47): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type 'IbadahEntry'.
+  No index signature with a parameter of type 'string' was found on type 'IbadahEntry'.
+src/components/charts/RekapanAngkatan.tsx(4,10): error TS2305: Module '"@/app/dashboard/fasilitator/actions"' has no exported member 'getActiveBatches'.
+src/components/charts/RekapanAngkatan.tsx(4,28): error TS2305: Module '"@/app/dashboard/fasilitator/actions"' has no exported member 'getRekapanAngkatanData'.
+src/components/charts/RekapanAngkatan.tsx(4,52): error TS2305: Module '"@/app/dashboard/fasilitator/actions"' has no exported member 'RekapanAngkatanResult'.
+src/components/tabs/KabarBaruTab.tsx(4,28): error TS2305: Module '"@/app/dashboard/fasilitator/actions"' has no exported member 'getActiveBatches'.
+src/components/tabs/KabarBaruTab.tsx(64,34): error TS7006: Parameter 'b' implicitly has an 'any' type.
+src/components/tabs/KabarBaruTab.tsx(264,55): error TS2339: Property 'rawDate' does not exist on type 'KabarBaruItem'.
+src/components/tabs/KabarBaruTab.tsx(264,87): error TS2339: Property 'timestamp' does not exist on type 'KabarBaruItem'.
+src/components/tabs/KabarBaruTab.tsx(269,51): error TS2339: Property 'description' does not exist on type 'KabarBaruItem'.
+src/components/tabs/KabarBaruTab.tsx(287,51): error TS2339: Property 'tipe' does not exist on type 'KabarBaruItem'.
+src/components/tabs/KabarBaruTab.tsx(289,59): error TS2339: Property 'tipe' does not exist on type 'KabarBaruItem'.
+src/components/tabs/KabarBaruTab.tsx(294,51): error TS2339: Property 'awardeeName' does not exist on type 'KabarBaruItem'.
+src/components/tabs/KabarBaruTab.tsx(296,62): error TS2339: Property 'awardeeName' does not exist on type 'KabarBaruItem'.
+src/components/tabs/KabarBaruTab.tsx(305,51): error TS2339: Property 'status' does not exist on type 'KabarBaruItem'.
+src/components/tabs/KabarBaruTab.tsx(307,58): error TS2339: Property 'status' does not exist on type 'KabarBaruItem'.
+src/components/tabs/KabarBaruTab.tsx(309,64): error TS2339: Property 'status' does not exist on type 'KabarBaruItem'.
+src/components/tabs/KabarBaruTab.tsx(313,59): error TS2339: Property 'status' does not exist on type 'KabarBaruItem'.
+src/components/tabs/RekapIndividuTab.tsx(4,33): error TS2305: Module '"@/app/dashboard/fasilitator/actions"' has no exported member 'getActiveBatches'.
+src/components/tabs/RekapIndividuTab.tsx(73,34): error TS7006: Parameter 'b' implicitly has an 'any' type.
+src/components/tabs/RekapIndividuTab.tsx(305,107): error TS2339: Property 'name' does not exist on type '{ count: number; type: string; }'.
+src/components/tabs/RekapIndividuTab.tsx(313,61): error TS2339: Property 'name' does not exist on type '{ count: number; type: string; }'.
+src/components/tabs/RekapIndividuTab.tsx(314,141): error TS2339: Property 'name' does not exist on type '{ count: number; type: string; }'.
+src/components/tabs/RekapIndividuTab.tsx(315,132): error TS2339: Property 'name' does not exist on type '{ count: number; type: string; }'.
+src/components/tabs/RekapLaporanTab.tsx(4,31): error TS2305: Module '"@/app/dashboard/fasilitator/actions"' has no exported member 'getActiveBatches'.
+src/components/tabs/RekapLaporanTab.tsx(5,35): error TS2305: Module '"@/app/dashboard/fasilitator/actions"' has no exported member 'RekapanAngkatanResult'.
+src/components/tabs/RekapLaporanTab.tsx(41,20): error TS7006: Parameter 'b' implicitly has an 'any' type.

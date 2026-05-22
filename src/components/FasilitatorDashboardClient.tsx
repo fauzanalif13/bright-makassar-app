@@ -1,222 +1,68 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { FasilitatorBarChart } from '@/src/components/charts/FasilitatorCharts'
-import type { FasilitatorChartData } from '@/src/components/charts/FasilitatorCharts'
-import { AwardeeIbadahMonthlyChart, AwardeeIbadahDailyChart } from '@/src/components/charts/AwardeeCharts'
-import type { IbadahMonthlyChartData, IbadahDailyChartData } from '@/src/components/charts/AwardeeCharts'
-import { getAwardeeChartData } from '@/app/dashboard/fasilitator/actions'
-import type { AwardeeChartResult } from '@/app/dashboard/fasilitator/actions'
-import { Users, User, Loader2, ChevronDown, BarChart3, Eye, Target } from 'lucide-react'
-import RekapanAngkatan from '@/src/components/charts/RekapanAngkatan'
-
-type AwardeeInfo = {
-    name: string
-    spreadsheet_id: string | null
-    sheet_config: { ibadah_sheet?: string; ibadah_sheet_name?: string } | null
-}
+import { useState } from 'react'
+import { Newspaper, BarChart3, User, Calendar } from 'lucide-react'
+import KabarBaruTab from '@/src/components/tabs/KabarBaruTab'
+import RekapLaporanTab from '@/src/components/tabs/RekapLaporanTab'
+import RekapIndividuTab from '@/src/components/tabs/RekapIndividuTab'
+import type { AwardeeFullInfo } from '@/app/dashboard/fasilitator/actions'
 
 type Props = {
     displayName: string
-    aggregatedData: FasilitatorChartData[]
-    awardees: AwardeeInfo[]
+    awardees: AwardeeFullInfo[]
 }
 
-export default function FasilitatorDashboardClient({ displayName, aggregatedData, awardees }: Props) {
-    const [activeTab, setActiveTab] = useState<'sorotan-umum' | 'rekapan-angkatan' | 'individu'>('sorotan-umum')
-    const [selectedAwardee, setSelectedAwardee] = useState<string>('')
-    const [individualData, setIndividualData] = useState<AwardeeChartResult | null>(null)
-    const [isPending, startTransition] = useTransition()
+type TabKey = 'kabar-baru' | 'rekap-laporan' | 'rekap-individu'
 
-    function handleSelectAwardee(name: string) {
-        setSelectedAwardee(name)
-        setIndividualData(null)
+const TAB_CONFIG: { key: TabKey; label: string; icon: any }[] = [
+    { key: 'kabar-baru', label: 'Kabar Baru', icon: Newspaper },
+    { key: 'rekap-laporan', label: 'Rekap Laporan', icon: BarChart3 },
+    { key: 'rekap-individu', label: 'Rekap Individu', icon: User },
+]
 
-        const awardee = awardees.find(a => a.name === name)
-        if (!awardee?.spreadsheet_id) return
-
-        const sheetName = awardee.sheet_config?.ibadah_sheet || awardee.sheet_config?.ibadah_sheet_name || 'LaporanIbadah'
-
-        startTransition(async () => {
-            try {
-                const result = await getAwardeeChartData(awardee.spreadsheet_id!, sheetName)
-                setIndividualData(result)
-            } catch (err) {
-                console.error('Failed to fetch individual data:', err)
-            }
-        })
-    }
+export default function FasilitatorDashboardClient({ displayName, awardees }: Props) {
+    const [activeTab, setActiveTab] = useState<TabKey>('kabar-baru')
 
     return (
         <div className="space-y-8">
             {/* Hero Banner */}
             <div className="bg-gradient-to-r from-[#00529C] to-[#15A4FA] rounded-3xl p-8 md:p-10 shadow-lg text-white relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                <div className="absolute bottom-0 left-1/3 w-48 h-48 bg-white/5 rounded-full blur-2xl translate-y-1/2" />
                 <div className="relative z-10">
                     <h1 className="text-3xl md:text-4xl font-black mb-3">Selamat datang, {displayName}!</h1>
                     <p className="text-blue-50 text-lg opacity-90 max-w-2xl">Pantau perkembangan ibadah dan aktivitas seluruh awardee di wilayah Anda melalui dashboard ini.</p>
+                    <div className="flex items-center gap-2 text-blue-100 text-xs font-medium bg-white/10 px-3 py-1.5 rounded-lg mt-4 w-fit">
+                        <Calendar className="w-3.5 h-3.5" />
+                        {new Date().toLocaleDateString('id-ID', {
+                            weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+                        })}
+                    </div>
                 </div>
             </div>
 
             {/* Tab Switcher */}
             <div className="flex gap-2 bg-gray-100 dark:bg-slate-800 p-1.5 rounded-2xl w-fit overflow-x-auto max-w-full">
-                <button
-                    onClick={() => setActiveTab('sorotan-umum')}
-                    className={`flex items-center whitespace-nowrap gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'sorotan-umum'
-                            ? 'bg-white dark:bg-slate-700 text-[#00529C] dark:text-[#60b5ff] shadow-sm'
-                            : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
+                {TAB_CONFIG.map(({ key, label, icon: Icon }) => (
+                    <button
+                        key={key}
+                        onClick={() => setActiveTab(key)}
+                        className={`flex items-center whitespace-nowrap gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                            activeTab === key
+                                ? 'bg-white dark:bg-slate-700 text-[#00529C] dark:text-[#60b5ff] shadow-sm'
+                                : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
                         }`}
-                >
-                    <BarChart3 className="w-4 h-4" />
-                    Sorotan Umum
-                </button>
-                <button
-                    onClick={() => setActiveTab('rekapan-angkatan')}
-                    className={`flex items-center whitespace-nowrap gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'rekapan-angkatan'
-                            ? 'bg-white dark:bg-slate-700 text-[#00529C] dark:text-[#60b5ff] shadow-sm'
-                            : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
-                        }`}
-                >
-                    <Target className="w-4 h-4" />
-                    Rekapan Angkatan
-                </button>
-                <button
-                    onClick={() => setActiveTab('individu')}
-                    className={`flex items-center whitespace-nowrap gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'individu'
-                            ? 'bg-white dark:bg-slate-700 text-[#00529C] dark:text-[#60b5ff] shadow-sm'
-                            : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
-                        }`}
-                >
-                    <Eye className="w-4 h-4" />
-                    Individu
-                </button>
+                    >
+                        <Icon className="w-4 h-4" />
+                        {label}
+                    </button>
+                ))}
             </div>
 
-            {/* ─── Sorotan Umum Tab ───────────────────────────────────────────── */}
-            {activeTab === 'sorotan-umum' && (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700 p-8">
-                        <div className="flex justify-between items-center mb-6">
-                            <div>
-                                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Rerata Ibadah Awardee (Angkatan)</h2>
-                                <p className="text-sm text-gray-500 dark:text-slate-400">Rata-rata capaian ibadah seluruh awardee aktif bulan ini</p>
-                            </div>
-                        </div>
-                        <FasilitatorBarChart data={aggregatedData} />
-                    </div>
-
-                    {/* Awardee Summary */}
-                    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700 p-8">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-[#00529C]/20 text-[#00529C] dark:text-[#60b5ff] flex items-center justify-center">
-                                <Users className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <h2 className="text-lg font-bold text-gray-900 dark:text-white">Daftar Awardee</h2>
-                                <p className="text-xs text-gray-500 dark:text-slate-400">{awardees.length} awardee terdaftar</p>
-                            </div>
-                        </div>
-                        <div className="space-y-2 max-h-80 overflow-y-auto">
-                            {awardees.map((a) => (
-                                <div key={a.name} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-slate-700/50 hover:bg-blue-50/50 dark:hover:bg-slate-700 transition-colors">
-                                    <div className="w-8 h-8 rounded-full bg-[#00529C]/10 dark:bg-[#00529C]/20 text-[#00529C] dark:text-[#60b5ff] flex items-center justify-center text-xs font-bold shrink-0">
-                                        {a.name.charAt(0).toUpperCase()}
-                                    </div>
-                                    <div className="min-w-0">
-                                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{a.name}</p>
-                                        <p className="text-[11px] text-gray-400 dark:text-slate-500">
-                                            {a.spreadsheet_id ? '✅ Spreadsheet terkonfigurasi' : '⚠️ Belum ada spreadsheet'}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
-                            {awardees.length === 0 && (
-                                <p className="text-sm text-gray-400 dark:text-slate-500 text-center py-6">Belum ada awardee aktif</p>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* ─── Rekapan Angkatan Tab ────────────────────────────────────── */}
-            {activeTab === 'rekapan-angkatan' && (
-                <RekapanAngkatan />
-            )}
-
-            {/* ─── Individu Tab ──────────────────────────────────────────── */}
-            {activeTab === 'individu' && (
-                <div className="space-y-6">
-                    {/* Dropdown selector */}
-                    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
-                        <div className="flex items-center gap-3 mb-4">
-                            <User className="w-5 h-5 text-[#00529C] dark:text-[#60b5ff]" />
-                            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Pilih Awardee</h2>
-                        </div>
-                        <div className="relative max-w-md">
-                            <select
-                                value={selectedAwardee}
-                                onChange={(e) => handleSelectAwardee(e.target.value)}
-                                className="w-full appearance-none px-4 py-3 pr-10 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl text-gray-800 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-[#15A4FA]/40 focus:border-[#15A4FA] transition-all cursor-pointer"
-                            >
-                                <option value="">-- Pilih Awardee --</option>
-                                {awardees
-                                    .filter(a => a.spreadsheet_id)
-                                    .map((a) => (
-                                        <option key={a.name} value={a.name}>{a.name}</option>
-                                    ))
-                                }
-                            </select>
-                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-slate-500 pointer-events-none" />
-                        </div>
-                    </div>
-
-                    {/* Loading state */}
-                    {isPending && (
-                        <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700 p-12 flex items-center justify-center">
-                            <div className="text-center space-y-3">
-                                <Loader2 className="w-8 h-8 text-[#15A4FA] animate-spin mx-auto" />
-                                <p className="text-sm text-gray-500 dark:text-slate-400 font-medium">Memuat data {selectedAwardee}...</p>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Individual charts */}
-                    {!isPending && individualData && selectedAwardee && (
-                        <div className="space-y-6">
-                            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700 p-8">
-                                <div className="mb-6">
-                                    <h2 className="text-xl font-bold text-[#00529C] dark:text-[#60b5ff]">Dashboard {selectedAwardee}</h2>
-                                    <p className="text-sm text-gray-500 dark:text-slate-400">Grafik ibadah individual bulan ini</p>
-                                </div>
-
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                    {/* Daily Chart */}
-                                    <div>
-                                        <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-300 text-center mb-2">Tren Harian</h3>
-                                        <AwardeeIbadahDailyChart data={individualData.daily as IbadahDailyChartData[]} />
-                                    </div>
-
-                                    {/* Monthly Chart */}
-                                    <div>
-                                        <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-300 text-center mb-2">Rerata Capaian (%)</h3>
-                                        <AwardeeIbadahMonthlyChart data={individualData.monthly as IbadahMonthlyChartData[]} />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Empty state */}
-                    {!isPending && !individualData && !selectedAwardee && (
-                        <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700 p-12 flex items-center justify-center">
-                            <div className="text-center space-y-2">
-                                <Users className="w-10 h-10 text-gray-300 dark:text-slate-600 mx-auto" />
-                                <p className="text-gray-400 dark:text-slate-400 font-medium">Pilih awardee dari dropdown untuk melihat dashboard individu</p>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )}
+            {/* Tab Content */}
+            {activeTab === 'kabar-baru' && <KabarBaruTab />}
+            {activeTab === 'rekap-laporan' && <RekapLaporanTab />}
+            {activeTab === 'rekap-individu' && <RekapIndividuTab awardees={awardees} />}
         </div>
     )
 }

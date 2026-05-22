@@ -88,17 +88,16 @@ export default function LoginPage() {
                 {/* Right Side - Form */}
                 <div className="w-full lg:w-1/2 p-8 sm:p-12 flex flex-col justify-center">
                     <div className="lg:hidden mb-8 text-center flex flex-col items-center">
-                        <div className="w-14 h-14 bg-linear-to-br from-[#00529C] to-[#15A4FA] rounded-xl flex items-center justify-center text-white font-bold text-3xl mb-4 shadow-md">
-                            B
+                        <div className="flex items-center justify-center text-white font-bold text-3xl space-x-4 mb-4">
+                            <Image src="/logo-ybm.png" alt="Logo" width={120} height={120} className="w-[80px] h-auto object-contain dark:hidden" />
+                            <Image src="/logo-ybm-white.png" alt="Logo" width={120} height={120} className="w-[80px] h-auto object-contain hidden dark:block" />
+                            <Image src="/logo-bright.png" alt="Logo" width={100} height={100} className="w-[80px] h-auto object-contain" />
                         </div>
-                        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
-                            Sister Bright
-                        </h2>
                     </div>
 
                     <div className="mb-8">
-                        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Masuk ke Akun</h2>
-                        <p className="text-gray-500 dark:text-gray-400">Silakan masukkan detail login Anda di bawah.</p>
+                        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Masuk Akun Pijar</h2>
+                        <p className="text-gray-500 dark:text-gray-400">Silakan masukkan email dan password Anda untuk melanjutkan.</p>
                     </div>
 
                     {errorMsg && (

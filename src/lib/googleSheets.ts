@@ -126,8 +126,9 @@ export async function getSheetData(
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId,
             range,
+            valueRenderOption: 'UNFORMATTED_VALUE',
         });
-        return (response.data.values as string[][]) || [];
+        return (response.data.values as any[][]) || [];
     }, `getSheetData(${range})`);
 
     setCache(cacheKey, result);
@@ -158,6 +159,7 @@ export async function getBatchCellValues(
             const response = await sheets.spreadsheets.values.batchGet({
                 spreadsheetId,
                 ranges,
+                valueRenderOption: 'UNFORMATTED_VALUE',
             });
             const valueRanges = response.data.valueRanges || []
             return valueRanges.map(vr => {
@@ -284,6 +286,76 @@ function parseSheetDate(raw: any): Date | null {
  *
  * Columns: Tanggal | Shalat Berjama'ah | Qiyamul Lail | Dzikir Pagi | Mendo'akan | Shalat Dhuha | Membaca Al-Quran | Shaum Sunnah | Berinfak
  */
+import { 
+    resolveMonthGrid,
+    parseBlockRange,
+    parseIbadahVal
+} from './ibadahDefaults';
+
+export type IbadahEntry = {
+    day: number             // 1-31
+    shalatBerjamaah: string
+    qiyamulLail: string
+    dzikirPagi: string
+    mendoakan: string
+    shalatDhuha: string
+    membacaQuran: string
+    shaumSunnah: string
+    berinfak: string
+}
+
+/**
+ * Fetch all ibadah entries for a specific calendar month/year
+ * using the grid block layout (e.g. G13:AK20).
+ */
+export async function getIbadahMonthEntriesFromGrid(
+    spreadsheetId: string,
+    sheetConfig: any,
+    angkatanStr: string | number | null | undefined,
+    month: number,
+    year: number
+): Promise<{ data?: IbadahEntry[]; error?: string }> {
+    try {
+        const angkatanNum = angkatanStr ? parseInt(String(angkatanStr)) : new Date().getFullYear();
+        if (isNaN(angkatanNum)) return { error: 'Angkatan tidak valid.' }
+
+        const grid = resolveMonthGrid(sheetConfig, month, year, angkatanNum)
+        if ('error' in grid && !('sheetName' in grid)) return { error: grid.error }
+        if (!('sheetName' in grid)) return { error: 'Konfigurasi tidak valid.' }
+
+        const { sheetName, blockRange } = grid
+        const fullRange = `'${sheetName}'!${blockRange}`
+
+        const rows = await getSheetData(spreadsheetId, fullRange)
+
+        const parsed = parseBlockRange(blockRange)
+        if (!parsed) return { error: 'Format range tidak valid.' }
+
+        const numDays = parsed.endCol - parsed.startCol + 1
+        const entries: IbadahEntry[] = []
+
+        for (let dayIdx = 0; dayIdx < numDays; dayIdx++) {
+            const day = dayIdx + 1
+            entries.push({
+                day,
+                shalatBerjamaah: parseIbadahVal(rows[0]?.[dayIdx], false),
+                qiyamulLail: parseIbadahVal(rows[1]?.[dayIdx], false),
+                dzikirPagi: parseIbadahVal(rows[2]?.[dayIdx], true),
+                mendoakan: parseIbadahVal(rows[3]?.[dayIdx], true),
+                shalatDhuha: parseIbadahVal(rows[4]?.[dayIdx], true),
+                membacaQuran: parseIbadahVal(rows[5]?.[dayIdx], true),
+                shaumSunnah: parseIbadahVal(rows[6]?.[dayIdx], true),
+                berinfak: parseIbadahVal(rows[7]?.[dayIdx], true),
+            })
+        }
+
+        return { data: entries }
+    } catch (err: any) {
+        console.error('[getIbadahMonthEntriesFromGrid] Error:', err?.message || err)
+        return { error: 'Gagal mengambil data ibadah.' }
+    }
+}
+
 export async function getIbadahMonthlyAverage(
     spreadsheetId: string,
     sheetName: string,

@@ -606,7 +606,6 @@ function BatchUserModal({ onClose, onCreated, univOptions }: { onClose: () => vo
     const [rows, setRows] = useState<BatchUserRow[]>([
         { name: '', email: '', password: '', spreadsheet_url: '', asal_univ: '' },
         { name: '', email: '', password: '', spreadsheet_url: '', asal_univ: '' },
-        { name: '', email: '', password: '', spreadsheet_url: '', asal_univ: '' },
     ])
     const [sharedBatch, setSharedBatch] = useState('')
     const [sharedAngkatan, setSharedAngkatan] = useState('')

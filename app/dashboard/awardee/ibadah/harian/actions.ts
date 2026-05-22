@@ -8,6 +8,10 @@ import {
     DAILY_ACTIVITIES,
     getDailyBlockDefault,
     parseDailyBlockRange,
+    CALENDAR_TO_ACADEMIC,
+    calendarToAcademicYear,
+    resolveMonthGrid,
+    parseBlockRange,
 } from '@/src/lib/ibadahDefaults'
 
 // ─── Types ───────────────────────────────────────────────────────────
@@ -23,16 +27,7 @@ export type IbadahEntry = {
     shaumSunnah: string
     berinfak: string
 }
-
-type SheetConfig = Record<string, any> | null
-
 // ─── Helpers ─────────────────────────────────────────────────────────
-
-/** Map calendar month (1-12) to academic month id */
-const CALENDAR_TO_ACADEMIC: Record<number, string> = {
-    1: 'januari', 2: 'februari', 3: 'maret', 4: 'april', 5: 'mei', 6: 'juni',
-    7: 'juli', 8: 'agustus', 9: 'september', 10: 'oktober', 11: 'november', 12: 'desember',
-}
 
 /** 
  * Parse spreadsheet cell value. 
@@ -40,7 +35,7 @@ const CALENDAR_TO_ACADEMIC: Record<number, string> = {
  * If it's 'ya' / '1' / 'true' / 'y', return '1'.
  * Otherwise return '0'.
  */
-function parseIbadahVal(val: any, isBooleanType: boolean): string {
+export function parseIbadahVal(val: any, isBooleanType: boolean): string {
     if (val === undefined || val === null || String(val).trim() === '') return ''
     const v = String(val).trim()
     if (isBooleanType) {
@@ -86,107 +81,11 @@ export async function getAngkatan() {
 
     return data?.angkatan ? parseInt(String(data.angkatan)) : new Date().getFullYear()
 }
+type SheetConfig = Record<string, any> | null
 
-/**
- * Map a calendar month+year to the correct academic year (1-4) using angkatan.
- *
- * Academic year calendar:
- *   Year 1: July {angkatan} → June {angkatan+1}
- *   Year 2: July {angkatan+1} → June {angkatan+2}
- *   Year 3: July {angkatan+2} → June {angkatan+3}
- *   Year 4: July {angkatan+3} → June {angkatan+4}
- *
- * Calendar months 7-12 (Jul-Dec) belong to the first half of the academic year.
- * Calendar months 1-6 (Jan-Jun) belong to the second half of the academic year.
- */
-function calendarToAcademicYear(calendarMonth: number, calendarYear: number, angkatan: number): number | null {
-    // Jul-Dec: academic year starts in this calendar year
-    // Jan-Jun: academic year started in the previous calendar year
-    const academicStartYear = calendarMonth >= 7 ? calendarYear : calendarYear - 1
-    const yearNum = academicStartYear - angkatan + 1 // 1-based
-    if (yearNum < 1 || yearNum > 4) return null
-    return yearNum
-}
+// ─── Helpers ─────────────────────────────────────────────────────────
 
-/**
- * Resolve the sheet name and daily block range for a given calendar month/year.
- *
- * Uses angkatan to determine the correct academic year (1-4), then:
- * 1. Checks sheet_config.ibadah.harian for that year's month config
- * 2. Falls back to default from ibadahDefaults.ts
- */
-function resolveMonthGrid(
-    sheetConfig: SheetConfig,
-    calendarMonth: number,
-    calendarYear: number,
-    angkatan: number
-): { sheetName: string; blockRange: string; error?: string } | { error: string } {
-    const monthId = CALENDAR_TO_ACADEMIC[calendarMonth]
-    if (!monthId) return { error: `Bulan tidak valid: ${calendarMonth}` }
-
-    const yearNum = calendarToAcademicYear(calendarMonth, calendarYear, angkatan)
-    if (!yearNum) return { error: `Bulan ${monthId} ${calendarYear} di luar jangkauan beasiswa (angkatan ${angkatan}).` }
-
-    const harianConfig = (sheetConfig as any)?.ibadah?.harian
-    const bulananConfig = (sheetConfig as any)?.ibadah?.bulanan
-    const yk = `tahun_${yearNum}`
-
-    // Prioritize harian config's sheet name, fallback to bulanan, then default
-    const sheetName = harianConfig?.[yk]?.sheet_name || bulananConfig?.[yk]?.sheet_name || `Tahun ke-${yearNum}`
-
-    // Check if this year's month has a configured block range
-    const yearCfg = harianConfig?.[yk]
-    const monthRange = yearCfg?.months?.[monthId]
-    if (monthRange && monthRange.trim()) {
-        const parsedInput = monthRange.trim()
-        let parsedSheetName = sheetName
-        let parsedBlockRange = parsedInput
-
-        if (parsedInput.includes('!')) {
-            const parts = parsedInput.split('!')
-            parsedSheetName = parts[0].replace(/'/g, '')
-            parsedBlockRange = parts[1]
-        }
-        return { sheetName: parsedSheetName, blockRange: parsedBlockRange }
-    }
-
-    // Try computing from explicit bulanan config if available
-    const explicitBulananCell = bulananConfig?.[yk]?.months?.[monthId]
-    if (explicitBulananCell && explicitBulananCell.trim()) {
-        const parsed = parseDailyBlockRange(explicitBulananCell.trim())
-        if (parsed && parsed.block) {
-            return { sheetName, blockRange: parsed.block }
-        }
-    }
-
-    // Fall back to complete default computed range
-    const defaultBlock = getDailyBlockDefault(yearNum, monthId)
-    if (defaultBlock) {
-        return { sheetName, blockRange: defaultBlock }
-    }
-
-    return { error: `Tidak ada konfigurasi untuk bulan ${monthId} tahun ke-${yearNum}. Pastikan konfigurasi ibadah harian sudah diatur di Pengaturan.` }
-}
-
-/** Parse a block range string like "G13:AK20" into start col, end col, start row */
-function parseBlockRange(blockRange: string): { startCol: number; endCol: number; startRow: number } | null {
-    // Just in case a sheet name sneaked in, strip it
-    const rangeOnly = blockRange.includes('!') ? blockRange.split('!')[1] : blockRange
-    const match = rangeOnly.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/)
-    if (!match) return null
-
-    function colToIndex(col: string): number {
-        let result = 0
-        for (let i = 0; i < col.length; i++) result = result * 26 + (col.charCodeAt(i) - 64)
-        return result
-    }
-
-    return {
-        startCol: colToIndex(match[1]),
-        endCol: colToIndex(match[3]),
-        startRow: parseInt(match[2]),
-    }
-}
+// (Helpers moved to ibadahDefaults.ts)
 
 /** Convert 1-based column index to letter (1→A, 7→G, 39→AM) */
 function colIndexToLetter(n: number): string {

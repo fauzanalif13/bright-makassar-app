@@ -1,10 +1,7 @@
 import { createClient } from '@/src/utils/supabase/server'
 import { redirect } from 'next/navigation'
-import { getIbadahMonthlyAverage } from '@/src/lib/googleSheets'
-import type { IbadahActivity, IbadahAverage } from '@/src/lib/googleSheets'
-import { IBADAH_ACTIVITIES } from '@/src/lib/googleSheets'
 import FasilitatorDashboardClient from '@/src/components/FasilitatorDashboardClient'
-import type { FasilitatorChartData } from '@/src/components/charts/FasilitatorCharts'
+import type { AwardeeFullInfo } from '@/app/dashboard/fasilitator/actions'
 
 export default async function FasilitatorDashboard() {
     const supabase = await createClient()
@@ -30,70 +27,25 @@ export default async function FasilitatorDashboard() {
 
     const displayName = userData?.name || user.email?.split('@')[0] || 'Fasilitator'
 
-    // ─── Fetch all active awardees ──────────────────────────────────
+    // ─── Fetch all active awardees with full info ────────────────────
     const { data: awardees } = await supabase
         .from('roles_pengguna')
-        .select('name, spreadsheet_id, sheet_config')
+        .select('name, spreadsheet_id, sheet_config, angkatan, gender')
         .eq('role', 'awardee')
         .eq('status', 'aktif')
+        .order('name')
 
-    const awardeeList = (awardees || []).map(a => ({
+    const awardeeList: AwardeeFullInfo[] = (awardees || []).map(a => ({
         name: a.name || 'Tanpa Nama',
         spreadsheet_id: a.spreadsheet_id || null,
-        sheet_config: (a.sheet_config as { ibadah_sheet?: string; ibadah_sheet_name?: string } | null) || null,
+        sheet_config: a.sheet_config || null,
+        angkatan: a.angkatan || null,
+        gender: a.gender || null,
     }))
-
-    // ─── Aggregation for Rekapan tab ────────────────────────────────
-    let aggregatedData: FasilitatorChartData[] = []
-
-    try {
-        if (awardeeList.length > 0) {
-            const now = new Date()
-            const currentMonth = now.getMonth() + 1
-            const currentYear = now.getFullYear()
-
-            const results = await Promise.all(
-                awardeeList
-                    .filter((a) => a.spreadsheet_id)
-                    .map(async (awardee) => {
-                        try {
-                            const sheetName = awardee.sheet_config?.ibadah_sheet || awardee.sheet_config?.ibadah_sheet_name || 'LaporanIbadah'
-                            const avg = await getIbadahMonthlyAverage(
-                                awardee.spreadsheet_id!,
-                                sheetName,
-                                currentMonth,
-                                currentYear
-                            )
-                            return avg
-                        } catch {
-                            return null
-                        }
-                    })
-            )
-
-            const validResults = results.filter((r): r is IbadahAverage => r !== null)
-
-            if (validResults.length > 0) {
-                aggregatedData = IBADAH_ACTIVITIES.map((activity: IbadahActivity) => {
-                    const sum = validResults.reduce((acc, r) => acc + r[activity], 0)
-                    const avg = Math.round(sum / validResults.length)
-                    return {
-                        name: activity
-                            .replace("Shalat Berjama'ah", "Jama'ah")
-                            .replace("Membaca Al-Quran", "Tilawah"),
-                        capaian: avg,
-                    }
-                })
-            }
-        }
-    } catch (err) {
-        console.error('Failed to aggregate fasilitator data:', err)
-    }
 
     return (
         <FasilitatorDashboardClient
             displayName={displayName}
-            aggregatedData={aggregatedData}
             awardees={awardeeList}
         />
     )
